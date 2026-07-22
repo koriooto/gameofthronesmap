@@ -9,17 +9,7 @@ import {
 import { REGIONS } from '../data/regions.js'
 import { LOCATIONS } from '../data/locations.js'
 import {
-  ESSOS,
-  SOTHORYOS,
-  ISLANDS,
-  RIVERS,
-  LAKES,
-  ISLE_OF_FACES,
   WALL,
-  MOUNTAINS,
-  FORESTS,
-  SWAMPS,
-  WAVES,
   COMPASS,
   CONTINENT_LABELS,
   SEA_LABELS,
@@ -27,6 +17,7 @@ import {
   smoothClosed,
 } from '../map/shapes.js'
 import { MarkerGlyph } from '../map/markers.jsx'
+import terrainUrl from '../assets/terrain.webp'
 
 const VB_W = 2000
 const VB_H = 1440
@@ -69,29 +60,6 @@ const levelsOf = (ppu) => ({
   minor: ppu >= 1.55,
   fadeWorld: ppu > 2.2,
 })
-
-// Контуры суши — общие для заливки и силуэта-тени.
-function LandShapes() {
-  return (
-    <>
-      <path d={ESSOS} />
-      <path d={SOTHORYOS} />
-      {Object.entries(REGIONS).map(
-        ([key, r]) => r.polygon && <path key={key} d={REGION_PATHS[key]} />,
-      )}
-      {ISLANDS.map(([cx, cy, rx, ry, rot], i) => (
-        <ellipse
-          key={i}
-          cx={cx}
-          cy={cy}
-          rx={rx}
-          ry={ry}
-          transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}
-        />
-      ))}
-    </>
-  )
-}
 
 const MapView = forwardRef(function MapView(
   { visibleIds, regionFilter, selectedId, onSelect, onRegionClick, onBackgroundTap, filtered },
@@ -408,17 +376,19 @@ const MapView = forwardRef(function MapView(
         </clipPath>
       </defs>
 
-      <rect width={VB_W} height={VB_H} fill="#b2cbd0" />
+      <rect width={VB_W} height={VB_H} fill="#9db8bf" />
 
       <g clipPath="url(#sheet)">
         <g ref={worldRef} transform={`translate(${x} ${y}) scale(${k})`}>
-          {/* ── суша: дешёвая тень-силуэт + заливка (без SVG-фильтров) ── */}
-          <g transform="translate(4 5)" className="land-shadow">
-            <LandShapes />
-          </g>
-          <g className="land">
-            <LandShapes />
-          </g>
+          {/* ── запечённый рельеф ── */}
+          <image
+            href={terrainUrl}
+            x="0"
+            y="0"
+            width={VB_W}
+            height={VB_H}
+            preserveAspectRatio="none"
+          />
 
           {/* ── регионы Вестероса (интерактивные) ── */}
           {Object.entries(REGIONS).map(([key, r]) => {
@@ -431,7 +401,7 @@ const MapView = forwardRef(function MapView(
                 d={REGION_PATHS[key]}
                 fill={r.color}
                 className="region-shape"
-                style={{ fillOpacity: active ? 0.62 : dimmed ? 0.12 : 0.34 }}
+                style={{ fillOpacity: active ? 0.42 : dimmed ? 0.04 : 0.12 }}
                 onMouseEnter={() => setHoverRegion(key)}
                 onMouseLeave={() => setHoverRegion(null)}
                 onClick={(e) => {
@@ -446,44 +416,6 @@ const MapView = forwardRef(function MapView(
             )
           })}
 
-          {/* ── декор: леса, горы, реки, Стена ── */}
-          <g className="forests">
-            {FORESTS.map(([cx, cy, r], i) => (
-              <circle key={i} cx={cx} cy={cy} r={r} />
-            ))}
-          </g>
-          <g className="mountains">
-            {MOUNTAINS.map(([mx, my], i) => (
-              <path key={i} d={`M${mx - 9},${my + 6} L${mx},${my - 8} L${mx + 9},${my + 6}`} />
-            ))}
-          </g>
-          <g className="rivers">
-            {RIVERS.map((d, i) => (
-              <path key={i} d={d} />
-            ))}
-          </g>
-          <g className="lakes">
-            {LAKES.map(([cx, cy, rx, ry], i) => (
-              <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} />
-            ))}
-            <ellipse
-              className="isle"
-              cx={ISLE_OF_FACES[0]}
-              cy={ISLE_OF_FACES[1]}
-              rx={ISLE_OF_FACES[2]}
-              ry={ISLE_OF_FACES[3]}
-            />
-          </g>
-          <g className="swamps">
-            {SWAMPS.map(([sx, sy], i) => (
-              <path key={i} d={`M${sx - 8},${sy} h6 m3,0 h6 M${sx - 5},${sy + 4} h5 m3,0 h5`} />
-            ))}
-          </g>
-          <g className="waves">
-            {WAVES.map(([wx, wy], i) => (
-              <path key={i} d={`M${wx - 10},${wy} q5,-4 10,0 q5,4 10,0 M${wx - 5},${wy + 5} q4,-3 8,0 q4,3 8,0`} />
-            ))}
-          </g>
           <path d={WALL} className="wall-under" />
           <path d={WALL} className="wall" />
 

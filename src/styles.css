@@ -215,23 +215,8 @@ body {
   cursor: grabbing;
 }
 
-.land {
-  fill: #ece1c4;
-  stroke: #6b5636;
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-}
-
-.land-shadow {
-  fill: #4f6a72;
-  opacity: 0.4;
-  stroke: none;
-}
-
 .region-shape {
-  stroke: #6b5636;
-  stroke-width: 0.8;
-  stroke-linejoin: round;
+  stroke: none;
   cursor: pointer;
   transition: fill-opacity 0.15s;
 }
@@ -309,18 +294,21 @@ body {
 }
 
 .sea-labels text {
-  fill: #5f7d8a;
+  fill: #4d6d7a;
   font-family: Georgia, serif;
   font-style: italic;
   letter-spacing: 0.35em;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 .region-labels text {
-  fill: #55432a;
+  fill: #4c3c25;
   font-size: 12.5px;
   letter-spacing: 0.22em;
   font-variant: small-caps;
+  paint-order: stroke;
+  stroke: rgba(240, 235, 215, 0.75);
+  stroke-width: 2.6px;
 }
 
 .swamps path {
