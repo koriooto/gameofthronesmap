@@ -607,7 +607,7 @@ const MapView = forwardRef(function MapView(
                   key={loc.id}
                   transform={`translate(${loc.x} ${loc.y})`}
                   className="marker"
-                  style={{ opacity: visible ? 1 : 0.18 }}
+                  style={{ opacity: visible || isSel || isHover ? 1 : 0.3 }}
                   onMouseEnter={() => setHoverId(loc.id)}
                   onMouseLeave={() => setHoverId(null)}
                   onClick={(e) => {

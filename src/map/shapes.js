@@ -39,6 +39,7 @@ const ESSOS_PTS = [
   // Спорные земли, Мир, Пентос, Браавос
   [780, 960], [750, 930], [730, 880], [710, 800], [725, 700], [700, 620],
 ]
+export { ESSOS_PTS, SOTHORYOS_PTS }
 export const ESSOS = smoothClosed(ESSOS_PTS)
 
 const SOTHORYOS_PTS = [
