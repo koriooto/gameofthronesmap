@@ -22,7 +22,7 @@ export const LABEL_OVERRIDES = {
   runestone: { x: 8, y: 2, a: 'start' },
   // Речные земли
   riverrun: { x: -9, y: 2, a: 'end' },
-  harrenhal: { x: 10, y: 2, a: 'start' },
+  harrenhal: { x: 0, y: 18 },
   godseye: { x: -9, y: 8, a: 'end' },
   // Запад
   casterly: { x: 0, y: -10 },
@@ -32,14 +32,12 @@ export const LABEL_OVERRIDES = {
   kingslanding: { x: -10, y: 2, a: 'end' },
   duskendale: { x: 9, y: 0, a: 'start' },
   rosby: { x: 9, y: 8, a: 'start' },
-  dragonstone: { x: -9, y: 2, a: 'end' },
   driftmark: { x: 9, y: 6, a: 'start' },
   crackclaw: { x: 9, y: 0, a: 'start' },
   // Штормовые земли
   stormsend: { x: 10, y: 0, a: 'start' },
   griffinsroost: { x: 9, y: -4, a: 'start' },
   // Дорн
-  sunspear: { x: 10, y: 0, a: 'start' },
   plankytown: { x: -9, y: 2, a: 'end' },
   watergardens: { x: -9, y: 6, a: 'end' },
   starfall: { x: -9, y: 2, a: 'end' },

@@ -30,8 +30,45 @@ const MAX_K = 14
 const polyPoints = (pts) => pts.map((p) => p.join(',')).join(' ')
 const clampK = (k) => Math.max(MIN_K, Math.min(MAX_K, k))
 
+// Не даём утащить лист карты целиком за экран: полоса в PAN_MARGIN единиц
+// от края листа всегда остаётся в поле зрения.
+const PAN_MARGIN = 350
+function clampView(v) {
+  const k = clampK(v.k)
+  return {
+    k,
+    x: Math.min(VB_W - PAN_MARGIN, Math.max(PAN_MARGIN - VB_W * k, v.x)),
+    y: Math.min(VB_H - PAN_MARGIN, Math.max(PAN_MARGIN - VB_H * k, v.y)),
+  }
+}
+
 function ease(t) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+}
+
+const WESTEROS_VIEW = { x: VB_W / 2 - 380 * 1.7, y: VB_H / 2 - 650 * 1.7, k: 1.7 }
+
+// Контуры суши — общие для заливки и силуэта-тени.
+function LandShapes() {
+  return (
+    <>
+      <path d={ESSOS} />
+      <path d={SOTHORYOS} />
+      {Object.values(REGIONS).map(
+        (r) => r.polygon && <polygon key={r.label.text} points={polyPoints(r.polygon)} />,
+      )}
+      {ISLANDS.map(([cx, cy, rx, ry, rot], i) => (
+        <ellipse
+          key={i}
+          cx={cx}
+          cy={cy}
+          rx={rx}
+          ry={ry}
+          transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}
+        />
+      ))}
+    </>
+  )
 }
 
 const MapView = forwardRef(function MapView(
@@ -39,37 +76,56 @@ const MapView = forwardRef(function MapView(
   ref,
 ) {
   const svgRef = useRef(null)
+  const worldRef = useRef(null)
   const viewRef = useRef({ x: 0, y: 0, k: 1 })
-  const [view, setViewState] = useState(viewRef.current)
+  const [, setTick] = useState(0)
   const [dims, setDims] = useState({ w: 1200, h: 800 })
   const animRef = useRef(null)
   const rafRef = useRef(null)
-  const pendingRef = useRef(null)
+  const commitTimerRef = useRef(null)
+  const lastCommitRef = useRef(0)
   const dragRef = useRef(null)
   const pinchRef = useRef(null)
   const pointersRef = useRef(new Map())
   const movedRef = useRef(false)
   const lastTapRef = useRef({ t: 0, x: 0, y: 0 })
+  const lastDblTapRef = useRef(0)
+  const regionTapTimerRef = useRef(null)
   const initializedRef = useRef(false)
   const [hoverId, setHoverId] = useState(null)
   const [hoverRegion, setHoverRegion] = useState(null)
 
-  const setView = useCallback((v) => {
-    viewRef.current = v
-    setViewState(v)
-  }, [])
+  const commit = useCallback(() => setTick((t) => t + 1), [])
 
-  // Троттлинг обновлений через rAF — иначе на телефонах карта дёргается.
-  const scheduleView = useCallback((v) => {
-    viewRef.current = v
-    pendingRef.current = v
-    if (rafRef.current == null) {
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null
-        setViewState(pendingRef.current)
-      })
-    }
-  }, [])
+  // Во время жестов transform пишется напрямую в DOM (без React-рендера),
+  // а полный рендер (размеры маркеров, пороги подписей) — не чаще ~7 раз/с.
+  const applyView = useCallback(
+    (raw) => {
+      viewRef.current = clampView(raw)
+      if (rafRef.current == null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null
+          const v = viewRef.current
+          worldRef.current?.setAttribute(
+            'transform',
+            `translate(${v.x} ${v.y}) scale(${v.k})`,
+          )
+        })
+      }
+      const now = performance.now()
+      if (now - lastCommitRef.current > 140) {
+        lastCommitRef.current = now
+        commit()
+      } else {
+        clearTimeout(commitTimerRef.current)
+        commitTimerRef.current = setTimeout(() => {
+          lastCommitRef.current = performance.now()
+          commit()
+        }, 150)
+      }
+    },
+    [commit],
+  )
 
   const stopAnim = useCallback(() => {
     if (animRef.current) {
@@ -79,14 +135,15 @@ const MapView = forwardRef(function MapView(
   }, [])
 
   const animateTo = useCallback(
-    (target, dur = 550) => {
+    (rawTarget, dur = 550) => {
       stopAnim()
+      const target = clampView(rawTarget)
       const from = { ...viewRef.current }
       const t0 = performance.now()
       const step = (now) => {
         const t = Math.min(1, (now - t0) / dur)
         const e = ease(t)
-        setView({
+        applyView({
           x: from.x + (target.x - from.x) * e,
           y: from.y + (target.y - from.y) * e,
           k: from.k + (target.k - from.k) * e,
@@ -96,7 +153,7 @@ const MapView = forwardRef(function MapView(
       }
       animRef.current = requestAnimationFrame(step)
     },
-    [setView, stopAnim],
+    [applyView, stopAnim],
   )
 
   useImperativeHandle(
@@ -107,14 +164,8 @@ const MapView = forwardRef(function MapView(
       },
       reset() {
         // На узких экранах «весь мир» нечитаем — сбрасываем на Вестерос.
-        const svg = svgRef.current
-        const w = svg ? svg.getBoundingClientRect().width : VB_W
-        if (w < 700) {
-          const k = 1.7
-          animateTo({ x: VB_W / 2 - 380 * k, y: VB_H / 2 - 650 * k, k })
-        } else {
-          animateTo({ x: 0, y: 0, k: 1 })
-        }
+        const w = svgRef.current ? svgRef.current.getBoundingClientRect().width : VB_W
+        animateTo(w < 700 ? WESTEROS_VIEW : { x: 0, y: 0, k: 1 })
       },
       zoomBy(f) {
         const { x, y, k } = viewRef.current
@@ -131,8 +182,7 @@ const MapView = forwardRef(function MapView(
   )
 
   // Размер контейнера — от него зависит пиксельная плотность карты.
-  // При первом реальном замере на узких экранах стартуем с Вестероса:
-  // весь мир на телефоне нечитаем.
+  // На узких экранах стартуем с Вестероса.
   useEffect(() => {
     const svg = svgRef.current
     const measure = () => {
@@ -142,8 +192,8 @@ const MapView = forwardRef(function MapView(
       if (!initializedRef.current) {
         initializedRef.current = true
         if (r.width < 700) {
-          const k = 1.7
-          setView({ x: VB_W / 2 - 380 * k, y: VB_H / 2 - 650 * k, k })
+          viewRef.current = clampView(WESTEROS_VIEW)
+          commit()
         }
       }
     }
@@ -151,7 +201,7 @@ const MapView = forwardRef(function MapView(
     const ro = new ResizeObserver(measure)
     ro.observe(svg)
     return () => ro.disconnect()
-  }, [setView])
+  }, [commit])
 
   // Точка курсора в координатах viewBox.
   const clientToBox = useCallback((clientX, clientY) => {
@@ -184,11 +234,21 @@ const MapView = forwardRef(function MapView(
       const p = clientToBox(e.clientX, e.clientY)
       const wx = (p.x - x) / k
       const wy = (p.y - y) / k
-      scheduleView({ x: p.x - wx * k2, y: p.y - wy * k2, k: k2 })
+      applyView({ x: p.x - wx * k2, y: p.y - wy * k2, k: k2 })
     }
     svg.addEventListener('wheel', onWheel, { passive: false })
     return () => svg.removeEventListener('wheel', onWheel)
-  }, [clientToBox, scheduleView, stopAnim])
+  }, [clientToBox, applyView, stopAnim])
+
+  // Захват указателя — только когда жест уже начался. Захват на pointerdown
+  // ретаргетит click на svg, и клики мышью по маркерам перестают работать.
+  const capture = (pointerId) => {
+    try {
+      svgRef.current.setPointerCapture(pointerId)
+    } catch {
+      // синтетические события без активного указателя
+    }
+  }
 
   const startPinch = () => {
     const pts = [...pointersRef.current.values()]
@@ -205,11 +265,6 @@ const MapView = forwardRef(function MapView(
   const onPointerDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     stopAnim()
-    try {
-      svgRef.current.setPointerCapture(e.pointerId)
-    } catch {
-      // например, синтетические события без активного указателя
-    }
     const p = clientToBox(e.clientX, e.clientY)
     pointersRef.current.set(e.pointerId, p)
     if (pointersRef.current.size === 1) {
@@ -217,6 +272,7 @@ const MapView = forwardRef(function MapView(
       dragRef.current = { start: p, view: { ...viewRef.current } }
     } else if (pointersRef.current.size === 2) {
       movedRef.current = true
+      for (const id of pointersRef.current.keys()) capture(id)
       startPinch()
     }
   }
@@ -234,7 +290,7 @@ const MapView = forwardRef(function MapView(
       const k2 = clampK(s.view.k * (dist / s.dist))
       const wx = (s.mid.x - s.view.x) / s.view.k
       const wy = (s.mid.y - s.view.y) / s.view.k
-      scheduleView({ x: mid.x - wx * k2, y: mid.y - wy * k2, k: k2 })
+      applyView({ x: mid.x - wx * k2, y: mid.y - wy * k2, k: k2 })
       return
     }
 
@@ -242,9 +298,12 @@ const MapView = forwardRef(function MapView(
     if (!d) return
     const dx = p.x - d.start.x
     const dy = p.y - d.start.y
-    if (Math.abs(dx) + Math.abs(dy) > 3) movedRef.current = true
+    if (!movedRef.current && Math.abs(dx) + Math.abs(dy) > 3) {
+      movedRef.current = true
+      capture(e.pointerId)
+    }
     if (movedRef.current)
-      scheduleView({ x: d.view.x + dx, y: d.view.y + dy, k: d.view.k })
+      applyView({ x: d.view.x + dx, y: d.view.y + dy, k: d.view.k })
   }
 
   const endPointer = (e) => {
@@ -266,7 +325,10 @@ const MapView = forwardRef(function MapView(
 
     dragRef.current = null
     if (pointersRef.current.size > 0) return
-    if (movedRef.current) return
+    if (movedRef.current) {
+      commit()
+      return
+    }
 
     // Одиночный тап по фону: снять выделение; двойной тап — приблизить.
     const p = clientToBox(e.clientX, e.clientY)
@@ -274,6 +336,8 @@ const MapView = forwardRef(function MapView(
     const lt = lastTapRef.current
     if (now - lt.t < 320 && Math.hypot(p.x - lt.x, p.y - lt.y) < 40) {
       lastTapRef.current = { t: 0, x: 0, y: 0 }
+      lastDblTapRef.current = now
+      clearTimeout(regionTapTimerRef.current)
       zoomAt(p, viewRef.current.k * 1.8)
     } else {
       lastTapRef.current = { t: now, x: p.x, y: p.y }
@@ -281,6 +345,7 @@ const MapView = forwardRef(function MapView(
     }
   }
 
+  const view = viewRef.current
   const { x, y, k } = view
   // Пикселей экрана на единицу карты — определяет размер маркеров и подписей.
   // preserveAspectRatio="slice" ⇒ масштаб задаёт бОльшая из сторон.
@@ -289,6 +354,8 @@ const MapView = forwardRef(function MapView(
   const ms = Math.max(0.45, Math.min(3.6, 1.15 / ppu))
   const showMajorLabels = ppu >= 0.5
   const showMinorLabels = ppu >= 1.05
+  // На больших зумах огромные подписи регионов и морей только мешают.
+  const worldLabelsFade = ppu > 2.2
 
   return (
     <svg
@@ -308,9 +375,6 @@ const MapView = forwardRef(function MapView(
           <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="7" />
           <feColorMatrix type="matrix" values="0 0 0 0 0.32  0 0 0 0 0.26  0 0 0 0 0.18  0 0 0 0.35 0" />
         </filter>
-        <filter id="landshadow">
-          <feDropShadow dx="3" dy="4" stdDeviation="4" floodColor="#5a4a30" floodOpacity="0.35" />
-        </filter>
         <radialGradient id="vignette" cx="50%" cy="50%" r="72%">
           <stop offset="70%" stopColor="#000" stopOpacity="0" />
           <stop offset="100%" stopColor="#3a2c17" stopOpacity="0.28" />
@@ -323,159 +387,148 @@ const MapView = forwardRef(function MapView(
       <rect width={VB_W} height={VB_H} fill="#cfc3a2" />
 
       <g clipPath="url(#sheet)">
-        <g transform={`translate(${x} ${y}) scale(${k})`}>
-        {/* ── суша ── */}
-        <g filter="url(#landshadow)">
-          <path d={ESSOS} className="land" />
-          <path d={SOTHORYOS} className="land" />
-          {Object.values(REGIONS).map(
-            (r) =>
-              r.polygon && (
-                <polygon key={r.label.text} points={polyPoints(r.polygon)} className="land" />
-              ),
-          )}
-          {ISLANDS.map(([cx, cy, rx, ry, rot], i) => (
-            <ellipse
-              key={i}
-              cx={cx}
-              cy={cy}
-              rx={rx}
-              ry={ry}
-              transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}
-              className="land"
-            />
-          ))}
-        </g>
+        <g ref={worldRef} transform={`translate(${x} ${y}) scale(${k})`}>
+          {/* ── суша: дешёвая тень-силуэт + заливка (без SVG-фильтров) ── */}
+          <g transform="translate(4 5)" className="land-shadow">
+            <LandShapes />
+          </g>
+          <g className="land">
+            <LandShapes />
+          </g>
 
-        {/* ── регионы Вестероса (интерактивные) ── */}
-        {Object.entries(REGIONS).map(([key, r]) => {
-          if (!r.polygon) return null
-          const active = regionFilter === key || hoverRegion === key
-          const dimmed = regionFilter && regionFilter !== key
-          return (
-            <polygon
-              key={key}
-              points={polyPoints(r.polygon)}
-              fill={r.color}
-              className="region-shape"
-              style={{ fillOpacity: active ? 0.62 : dimmed ? 0.12 : 0.34 }}
-              onMouseEnter={() => setHoverRegion(key)}
-              onMouseLeave={() => setHoverRegion(null)}
-              onClick={(e) => {
-                if (movedRef.current) return
-                e.stopPropagation()
-                onRegionClick(key)
-              }}
-            />
-          )
-        })}
-
-        {/* ── декор: леса, горы, реки, Стена ── */}
-        <g className="forests">
-          {FORESTS.map(([cx, cy, r], i) => (
-            <circle key={i} cx={cx} cy={cy} r={r} />
-          ))}
-        </g>
-        <g className="mountains">
-          {MOUNTAINS.map(([mx, my], i) => (
-            <path key={i} d={`M${mx - 9},${my + 6} L${mx},${my - 8} L${mx + 9},${my + 6}`} />
-          ))}
-        </g>
-        <g className="rivers">
-          {RIVERS.map((d, i) => (
-            <path key={i} d={d} />
-          ))}
-        </g>
-        <path d={WALL} className="wall" />
-
-        {/* ── подписи ── */}
-        <g className="sea-labels">
-          {SEA_LABELS.map(([text, lx, ly, rot, size]) => (
-            <text
-              key={text}
-              x={lx}
-              y={ly}
-              fontSize={size}
-              transform={rot ? `rotate(${rot} ${lx} ${ly})` : undefined}
-            >
-              {text}
-            </text>
-          ))}
-          <text x={FAR_NORTH_LABEL.x} y={FAR_NORTH_LABEL.y} fontSize="20">
-            {FAR_NORTH_LABEL.text}
-          </text>
-        </g>
-        <g className="region-labels">
+          {/* ── регионы Вестероса (интерактивные) ── */}
           {Object.entries(REGIONS).map(([key, r]) => {
-            const lines = r.label.text.split('\n')
+            if (!r.polygon) return null
+            const active = regionFilter === key || hoverRegion === key
             const dimmed = regionFilter && regionFilter !== key
             return (
-              <text
+              <polygon
                 key={key}
-                x={r.label.x}
-                y={r.label.y}
-                style={{ opacity: dimmed ? 0.25 : 0.8 }}
-              >
-                {lines.map((ln, i) => (
-                  <tspan key={i} x={r.label.x} dy={i === 0 ? 0 : 15}>
-                    {ln}
-                  </tspan>
-                ))}
-              </text>
-            )
-          })}
-        </g>
-
-        {/* ── маркеры ── */}
-        <g>
-          {LOCATIONS.map((loc) => {
-            const visible = visibleIds.has(loc.id)
-            const isSel = selectedId === loc.id
-            const isHover = hoverId === loc.id
-            const s = ms * (isSel ? 1.5 : isHover ? 1.25 : 1)
-            const showLabel =
-              isSel ||
-              isHover ||
-              (visible && (loc.major ? showMajorLabels : showMinorLabels))
-            const o = LABEL_OVERRIDES[loc.id]
-            const lx = o?.x ?? 0
-            const ly = o?.y ?? 16
-            const anchor = o?.a ?? 'middle'
-            return (
-              <g
-                key={loc.id}
-                transform={`translate(${loc.x} ${loc.y})`}
-                className="marker"
-                style={{ opacity: visible ? 1 : 0.18 }}
-                onMouseEnter={() => setHoverId(loc.id)}
-                onMouseLeave={() => setHoverId(null)}
+                points={polyPoints(r.polygon)}
+                fill={r.color}
+                className="region-shape"
+                style={{ fillOpacity: active ? 0.62 : dimmed ? 0.12 : 0.34 }}
+                onMouseEnter={() => setHoverRegion(key)}
+                onMouseLeave={() => setHoverRegion(null)}
                 onClick={(e) => {
                   if (movedRef.current) return
+                  // двойной тап по региону — это зум, а не выбор
+                  if (performance.now() - lastDblTapRef.current < 400) return
                   e.stopPropagation()
-                  onSelect(loc.id)
+                  clearTimeout(regionTapTimerRef.current)
+                  regionTapTimerRef.current = setTimeout(() => onRegionClick(key), 340)
                 }}
-              >
-                <g transform={`scale(${s})`}>
-                  {isSel && <circle r="10" className="marker-halo" />}
-                  {/* невидимая зона тапа ~35px на любом зуме */}
-                  <circle r="15" fill="transparent" />
-                  <MarkerGlyph type={loc.type} />
-                  {showLabel && (
-                    <text
-                      x={lx}
-                      y={ly}
-                      textAnchor={anchor}
-                      className={`marker-label ${loc.major ? 'major' : ''}`}
-                    >
-                      {loc.name}
-                    </text>
-                  )}
-                </g>
-              </g>
+              />
             )
           })}
+
+          {/* ── декор: леса, горы, реки, Стена ── */}
+          <g className="forests">
+            {FORESTS.map(([cx, cy, r], i) => (
+              <circle key={i} cx={cx} cy={cy} r={r} />
+            ))}
+          </g>
+          <g className="mountains">
+            {MOUNTAINS.map(([mx, my], i) => (
+              <path key={i} d={`M${mx - 9},${my + 6} L${mx},${my - 8} L${mx + 9},${my + 6}`} />
+            ))}
+          </g>
+          <g className="rivers">
+            {RIVERS.map((d, i) => (
+              <path key={i} d={d} />
+            ))}
+          </g>
+          <path d={WALL} className="wall" />
+
+          {/* ── подписи морей и регионов ── */}
+          <g className="sea-labels" style={{ opacity: worldLabelsFade ? 0 : 1 }}>
+            {SEA_LABELS.map(([text, lx, ly, rot, size]) => (
+              <text
+                key={text}
+                x={lx}
+                y={ly}
+                fontSize={size}
+                transform={rot ? `rotate(${rot} ${lx} ${ly})` : undefined}
+              >
+                {text}
+              </text>
+            ))}
+            <text x={FAR_NORTH_LABEL.x} y={FAR_NORTH_LABEL.y} fontSize="20">
+              {FAR_NORTH_LABEL.text}
+            </text>
+          </g>
+          <g className="region-labels" style={{ opacity: worldLabelsFade ? 0 : 1 }}>
+            {Object.entries(REGIONS).map(([key, r]) => {
+              const lines = r.label.text.split('\n')
+              const dimmed = regionFilter && regionFilter !== key
+              return (
+                <text
+                  key={key}
+                  x={r.label.x}
+                  y={r.label.y}
+                  style={{ opacity: dimmed ? 0.25 : 0.8 }}
+                >
+                  {lines.map((ln, i) => (
+                    <tspan key={i} x={r.label.x} dy={i === 0 ? 0 : 15}>
+                      {ln}
+                    </tspan>
+                  ))}
+                </text>
+              )
+            })}
+          </g>
+
+          {/* ── маркеры ── */}
+          <g>
+            {LOCATIONS.map((loc) => {
+              const visible = visibleIds.has(loc.id)
+              const isSel = selectedId === loc.id
+              const isHover = hoverId === loc.id
+              const s = ms * (isSel ? 1.5 : isHover ? 1.25 : 1)
+              const showLabel =
+                isSel ||
+                isHover ||
+                (visible && (loc.major ? showMajorLabels : showMinorLabels))
+              const o = LABEL_OVERRIDES[loc.id]
+              const lx = o?.x ?? 0
+              const ly = o?.y ?? 16
+              const anchor = o?.a ?? 'middle'
+              return (
+                <g
+                  key={loc.id}
+                  transform={`translate(${loc.x} ${loc.y})`}
+                  className="marker"
+                  style={{ opacity: visible ? 1 : 0.18 }}
+                  onMouseEnter={() => setHoverId(loc.id)}
+                  onMouseLeave={() => setHoverId(null)}
+                  onClick={(e) => {
+                    if (movedRef.current) return
+                    e.stopPropagation()
+                    clearTimeout(regionTapTimerRef.current)
+                    onSelect(loc.id)
+                  }}
+                >
+                  <g transform={`scale(${s})`}>
+                    {isSel && <circle r="10" className="marker-halo" />}
+                    {/* невидимая зона тапа ~35px на любом зуме */}
+                    <circle r="15" fill="transparent" />
+                    <MarkerGlyph type={loc.type} />
+                    {showLabel && (
+                      <text
+                        x={lx}
+                        y={ly}
+                        textAnchor={anchor}
+                        className={`marker-label ${loc.major ? 'major' : ''}`}
+                      >
+                        {loc.name}
+                      </text>
+                    )}
+                  </g>
+                </g>
+              )
+            })}
+          </g>
         </g>
-      </g>
       </g>
 
       <rect width={VB_W} height={VB_H} fill="url(#vignette)" pointerEvents="none" />

@@ -202,6 +202,12 @@ body {
   stroke-linejoin: round;
 }
 
+.land-shadow {
+  fill: #5a4a30;
+  opacity: 0.35;
+  stroke: none;
+}
+
 .region-shape {
   stroke: #6b5636;
   stroke-width: 0.8;
@@ -243,6 +249,11 @@ body {
   stroke-linecap: round;
   paint-order: stroke;
   filter: drop-shadow(0 1px 1px #5a4a30);
+}
+
+.sea-labels,
+.region-labels {
+  transition: opacity 0.3s;
 }
 
 .sea-labels text {
@@ -355,10 +366,10 @@ body {
 
 .card-close {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 36px;
-  height: 36px;
+  top: 0;
+  right: 0;
+  width: 42px;
+  height: 42px;
   font: inherit;
   font-size: 15px;
   background: none;

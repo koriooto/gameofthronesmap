@@ -47,7 +47,7 @@ export const REGIONS = {
     name: 'Железные острова',
     continent: 'westeros',
     color: '#a8b5ab',
-    label: { text: 'ЖЕЛЕЗНЫЕ О-ВА', x: 128, y: 748 },
+    label: { text: 'ЖЕЛЕЗНЫЕ О-ВА', x: 172, y: 752 },
     polygon: null,
   },
   riverlands: {
