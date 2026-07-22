@@ -86,10 +86,12 @@ export default function App() {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onRegionClick={(key) => {
-            // Повторный тап по уже выбранному региону не сбрасывает вид:
-            // на тач-экранах это случайные промахи мимо маркеров.
-            if (key !== regionFilter) chooseRegion(key)
+            // Повторный клик по выбранному региону снимает фильтр,
+            // но вид карты не трогаем — без неожиданных «отзумов».
+            if (key === regionFilter) setRegionFilter(null)
+            else chooseRegion(key)
           }}
+          onBackgroundTap={() => setRegionFilter(null)}
         />
 
         <div className="zoom-controls">

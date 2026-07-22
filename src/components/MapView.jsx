@@ -48,6 +48,14 @@ function ease(t) {
 
 const WESTEROS_VIEW = { x: VB_W / 2 - 380 * 1.7, y: VB_H / 2 - 650 * 1.7, k: 1.7 }
 
+// Производные от масштаба величины. ppu — пикселей экрана на единицу карты.
+const msOf = (ppu) => Math.max(0.45, Math.min(3.6, 1.15 / ppu))
+const levelsOf = (ppu) => ({
+  major: ppu >= 0.5,
+  minor: ppu >= 1.55,
+  fadeWorld: ppu > 2.2,
+})
+
 // Контуры суши — общие для заливки и силуэта-тени.
 function LandShapes() {
   return (
@@ -72,18 +80,17 @@ function LandShapes() {
 }
 
 const MapView = forwardRef(function MapView(
-  { visibleIds, regionFilter, selectedId, onSelect, onRegionClick },
+  { visibleIds, regionFilter, selectedId, onSelect, onRegionClick, onBackgroundTap },
   ref,
 ) {
   const svgRef = useRef(null)
   const worldRef = useRef(null)
   const viewRef = useRef({ x: 0, y: 0, k: 1 })
+  const dimsRef = useRef({ w: 1200, h: 800 })
   const [, setTick] = useState(0)
-  const [dims, setDims] = useState({ w: 1200, h: 800 })
   const animRef = useRef(null)
   const rafRef = useRef(null)
-  const commitTimerRef = useRef(null)
-  const lastCommitRef = useRef(0)
+  const levelsRef = useRef(levelsOf(1))
   const dragRef = useRef(null)
   const pinchRef = useRef(null)
   const pointersRef = useRef(new Map())
@@ -97,8 +104,15 @@ const MapView = forwardRef(function MapView(
 
   const commit = useCallback(() => setTick((t) => t + 1), [])
 
-  // Во время жестов transform пишется напрямую в DOM (без React-рендера),
-  // а полный рендер (размеры маркеров, пороги подписей) — не чаще ~7 раз/с.
+  const baseOf = () => {
+    const d = dimsRef.current
+    // preserveAspectRatio="slice" ⇒ масштаб задаёт бОльшая из сторон.
+    return Math.max(d.w / VB_W, d.h / VB_H)
+  }
+
+  // Во время жестов НИКАКОГО React-рендера: transform мира и масштаб
+  // маркеров (CSS-переменная --ms) пишутся напрямую в DOM. Рендер
+  // случается только при пересечении порогов видимости подписей.
   const applyView = useCallback(
     (raw) => {
       viewRef.current = clampView(raw)
@@ -106,22 +120,24 @@ const MapView = forwardRef(function MapView(
         rafRef.current = requestAnimationFrame(() => {
           rafRef.current = null
           const v = viewRef.current
+          const svg = svgRef.current
           worldRef.current?.setAttribute(
             'transform',
             `translate(${v.x} ${v.y}) scale(${v.k})`,
           )
+          const ppu = baseOf() * v.k
+          svg?.style.setProperty('--ms', String(msOf(ppu)))
+          const lv = levelsOf(ppu)
+          const prev = levelsRef.current
+          if (
+            lv.major !== prev.major ||
+            lv.minor !== prev.minor ||
+            lv.fadeWorld !== prev.fadeWorld
+          ) {
+            levelsRef.current = lv
+            commit()
+          }
         })
-      }
-      const now = performance.now()
-      if (now - lastCommitRef.current > 140) {
-        lastCommitRef.current = now
-        commit()
-      } else {
-        clearTimeout(commitTimerRef.current)
-        commitTimerRef.current = setTimeout(() => {
-          lastCommitRef.current = performance.now()
-          commit()
-        }, 150)
       }
     },
     [commit],
@@ -181,27 +197,25 @@ const MapView = forwardRef(function MapView(
     [animateTo],
   )
 
-  // Размер контейнера — от него зависит пиксельная плотность карты.
-  // На узких экранах стартуем с Вестероса.
+  // Размер контейнера; на узких экранах стартуем с Вестероса.
   useEffect(() => {
     const svg = svgRef.current
     const measure = () => {
       const r = svg.getBoundingClientRect()
       if (!r.width || !r.height) return
-      setDims({ w: r.width, h: r.height })
+      dimsRef.current = { w: r.width, h: r.height }
       if (!initializedRef.current) {
         initializedRef.current = true
-        if (r.width < 700) {
-          viewRef.current = clampView(WESTEROS_VIEW)
-          commit()
-        }
+        if (r.width < 700) viewRef.current = clampView(WESTEROS_VIEW)
       }
+      applyView(viewRef.current)
+      commit()
     }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(svg)
     return () => ro.disconnect()
-  }, [commit])
+  }, [applyView, commit])
 
   // Точка курсора в координатах viewBox.
   const clientToBox = useCallback((clientX, clientY) => {
@@ -240,7 +254,7 @@ const MapView = forwardRef(function MapView(
     return () => svg.removeEventListener('wheel', onWheel)
   }, [clientToBox, applyView, stopAnim])
 
-  // Захват указателя — только когда жест уже начался. Захват на pointerdown
+  // Захват указателя — только когда жест уже начался: захват на pointerdown
   // ретаргетит click на svg, и клики мышью по маркерам перестают работать.
   const capture = (pointerId) => {
     try {
@@ -325,10 +339,7 @@ const MapView = forwardRef(function MapView(
 
     dragRef.current = null
     if (pointersRef.current.size > 0) return
-    if (movedRef.current) {
-      commit()
-      return
-    }
+    if (movedRef.current) return
 
     // Одиночный тап по фону: снять выделение; двойной тап — приблизить.
     const p = clientToBox(e.clientX, e.clientY)
@@ -342,20 +353,18 @@ const MapView = forwardRef(function MapView(
     } else {
       lastTapRef.current = { t: now, x: p.x, y: p.y }
       onSelect(null)
+      // Тап по «свободной» области (не маркер и не регион) сбрасывает фильтр.
+      const t = e.target
+      if (!(t.closest?.('.marker') || t.closest?.('.region-shape')))
+        onBackgroundTap?.()
     }
   }
 
-  const view = viewRef.current
-  const { x, y, k } = view
-  // Пикселей экрана на единицу карты — определяет размер маркеров и подписей.
-  // preserveAspectRatio="slice" ⇒ масштаб задаёт бОльшая из сторон.
-  const base = Math.max(dims.w / VB_W, dims.h / VB_H)
-  const ppu = base * k
-  const ms = Math.max(0.45, Math.min(3.6, 1.15 / ppu))
-  const showMajorLabels = ppu >= 0.5
-  const showMinorLabels = ppu >= 1.05
-  // На больших зумах огромные подписи регионов и морей только мешают.
-  const worldLabelsFade = ppu > 2.2
+  const { x, y, k } = viewRef.current
+  const ppu = baseOf() * k
+  const ms = msOf(ppu)
+  const { major: showMajorLabels, minor: showMinorLabels, fadeWorld } = levelsOf(ppu)
+  levelsRef.current = { major: showMajorLabels, minor: showMinorLabels, fadeWorld }
 
   return (
     <svg
@@ -363,6 +372,7 @@ const MapView = forwardRef(function MapView(
       className="map-svg"
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       preserveAspectRatio="xMidYMid slice"
+      style={{ '--ms': ms }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPointer}
@@ -371,10 +381,6 @@ const MapView = forwardRef(function MapView(
       aria-label="Карта известного мира"
     >
       <defs>
-        <filter id="paper" x="-5%" y="-5%" width="110%" height="110%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="7" />
-          <feColorMatrix type="matrix" values="0 0 0 0 0.32  0 0 0 0 0.26  0 0 0 0 0.18  0 0 0 0.35 0" />
-        </filter>
         <radialGradient id="vignette" cx="50%" cy="50%" r="72%">
           <stop offset="70%" stopColor="#000" stopOpacity="0" />
           <stop offset="100%" stopColor="#3a2c17" stopOpacity="0.28" />
@@ -438,10 +444,11 @@ const MapView = forwardRef(function MapView(
               <path key={i} d={d} />
             ))}
           </g>
+          <path d={WALL} className="wall-under" />
           <path d={WALL} className="wall" />
 
           {/* ── подписи морей и регионов ── */}
-          <g className="sea-labels" style={{ opacity: worldLabelsFade ? 0 : 1 }}>
+          <g className="sea-labels" style={{ opacity: fadeWorld ? 0 : 1 }}>
             {SEA_LABELS.map(([text, lx, ly, rot, size]) => (
               <text
                 key={text}
@@ -457,7 +464,7 @@ const MapView = forwardRef(function MapView(
               {FAR_NORTH_LABEL.text}
             </text>
           </g>
-          <g className="region-labels" style={{ opacity: worldLabelsFade ? 0 : 1 }}>
+          <g className="region-labels" style={{ opacity: fadeWorld ? 0 : 1 }}>
             {Object.entries(REGIONS).map(([key, r]) => {
               const lines = r.label.text.split('\n')
               const dimmed = regionFilter && regionFilter !== key
@@ -484,14 +491,17 @@ const MapView = forwardRef(function MapView(
               const visible = visibleIds.has(loc.id)
               const isSel = selectedId === loc.id
               const isHover = hoverId === loc.id
-              const s = ms * (isSel ? 1.5 : isHover ? 1.25 : 1)
+              const mult = isSel ? 1.5 : isHover ? 1.25 : 1
               const showLabel =
                 isSel ||
                 isHover ||
                 (visible && (loc.major ? showMajorLabels : showMinorLabels))
               const o = LABEL_OVERRIDES[loc.id]
-              const lx = o?.x ?? 0
-              const ly = o?.y ?? 16
+              // У выбранного маркера появляется ореол r=10 — отодвигаем
+              // подпись, чтобы текст не налезал на значок.
+              const off = isSel ? 1.6 : 1
+              const lx = (o?.x ?? 0) * off
+              const ly = o == null ? (isSel ? 24 : 16) : o.y * off
               const anchor = o?.a ?? 'middle'
               return (
                 <g
@@ -508,7 +518,11 @@ const MapView = forwardRef(function MapView(
                     onSelect(loc.id)
                   }}
                 >
-                  <g transform={`scale(${s})`}>
+                  {/* масштаб через CSS-переменную: жесты не трогают React */}
+                  <g
+                    className="marker-scale"
+                    style={{ transform: `scale(calc(var(--ms, 1) * ${mult}))` }}
+                  >
                     {isSel && <circle r="10" className="marker-halo" />}
                     {/* невидимая зона тапа ~35px на любом зуме */}
                     <circle r="15" fill="transparent" />
@@ -532,7 +546,6 @@ const MapView = forwardRef(function MapView(
       </g>
 
       <rect width={VB_W} height={VB_H} fill="url(#vignette)" pointerEvents="none" />
-      <rect width={VB_W} height={VB_H} filter="url(#paper)" opacity="0.5" pointerEvents="none" />
       <rect x="6" y="6" width={VB_W - 12} height={VB_H - 12} className="map-frame" pointerEvents="none" />
     </svg>
   )
