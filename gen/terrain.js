@@ -16,7 +16,7 @@ import {
 
 const W = 2000
 const H = 1440
-const SS = 2 // суперсэмплинг подложки
+const SS = 2.5 // суперсэмплинг подложки
 
 // ── шум ──
 const hash = (x, y) => {
@@ -54,8 +54,18 @@ const CHAINS = [
   { pts: [[1770, 1025], [1815, 985], [1855, 950]], w: 26, h: 0.8 }, // горы Асшая
   { pts: [[1390, 245], [1445, 252], [1480, 262]], w: 18, h: 0.5 }, // Иб
   { pts: [[1330, 540], [1345, 548]], w: 14, h: 0.5 }, // Матерь Гор
+  { pts: [[750, 505], [790, 535]], w: 18, h: 0.4 }, // Бархатные холмы
+  { pts: [[795, 425], [835, 445]], w: 18, h: 0.35 }, // холмы Андалоса
+  { pts: [[1392, 645], [1400, 700]], w: 26, h: 0.7 }, // Кости южнее
+  { pts: [[280, 90], [330, 75]], w: 20, h: 0.6 }, // север Клыков
+  { pts: [[560, 630], [580, 648]], w: 12, h: 0.35 }, // холмы Перстов
+  { pts: [[292, 782], [300, 792]], w: 10, h: 0.4 }, // Золотой Зуб
+  { pts: [[452, 1108], [485, 1122], [505, 1118]], w: 20, h: 0.55 }, // Костяной Путь
+  { pts: [[598, 292], [606, 300]], w: 12, h: 0.45 }, // Скагос
+  { pts: [[790, 900], [815, 925]], w: 16, h: 0.3 }, // Спорные холмы
   // Соториос и Ленг
   { pts: [[1130, 1250], [1190, 1300], [1160, 1350]], w: 30, h: 0.55 },
+  { pts: [[1240, 1230], [1290, 1290]], w: 26, h: 0.45 },
   { pts: [[1688, 1050], [1694, 1090]], w: 12, h: 0.35 },
 ]
 
@@ -266,7 +276,7 @@ for (const r of Object.values(REGIONS)) if (r.polygon) ctx.stroke(regionPath(r))
 for (const d of RIVERS) {
   const path = new Path2D(d)
   ctx.strokeStyle = 'rgba(210,228,232,0.5)'
-  ctx.lineWidth = 4.6
+  ctx.lineWidth = 4.0
   ctx.lineCap = 'round'
   ctx.stroke(path)
 }
@@ -294,7 +304,7 @@ const treeType = (cx, cy) => {
 }
 for (const [cx, cy, rad] of FORESTS) {
   const type = treeType(cx, cy)
-  const count = Math.round(rad * rad * 0.055)
+  const count = Math.round(rad * rad * 0.07)
   for (let i = 0; i < count; i++) {
     const a = hash(i, cx) * Math.PI * 2
     const rr = Math.sqrt(hash(cx + i, cy)) * rad * 0.92
