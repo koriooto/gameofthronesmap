@@ -215,6 +215,96 @@ body {
   cursor: grabbing;
 }
 
+.coastlines path,
+.coastlines ellipse {
+  fill: none;
+  stroke: #54422a;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+.rivers-halo path {
+  fill: none;
+  stroke: rgba(214, 232, 236, 0.55);
+  stroke-width: 3.6;
+  stroke-linecap: round;
+}
+
+.rivers path {
+  fill: none;
+  stroke: #55869e;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+.lakes ellipse {
+  fill: #7fabbc;
+  stroke: #4f7f97;
+  stroke-width: 1.1;
+}
+
+.lakes .isle {
+  fill: #a9bb8a;
+  stroke: #54422a;
+  stroke-width: 0.8;
+}
+
+.forest-base {
+  fill: rgba(72, 100, 62, 0.22);
+}
+
+.tree-conif {
+  fill: #4d6a46;
+  stroke: #3a5236;
+  stroke-width: 0.5;
+}
+
+.tree-decid {
+  fill: #5d7f4a;
+  stroke: #48633a;
+  stroke-width: 0.6;
+}
+
+.tree-trop {
+  fill: #46734a;
+  stroke: #375c3b;
+  stroke-width: 0.6;
+}
+
+.tree-trunk {
+  stroke: #4a3c28;
+  stroke-width: 0.9;
+  fill: none;
+}
+
+.swamps path {
+  stroke: #6f95a8;
+  stroke-width: 1.4;
+  fill: none;
+  opacity: 0.75;
+  stroke-linecap: round;
+}
+
+.peak-light {
+  fill: #b39d78;
+}
+
+.peak-dark {
+  fill: #7c664a;
+}
+
+.peak-line {
+  fill: none;
+  stroke: #57452f;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.peak-snow {
+  fill: #f6f4ec;
+}
+
 .region-shape {
   stroke: none;
   cursor: pointer;
@@ -225,37 +315,6 @@ body {
   fill: none;
   stroke: #5a4a30;
   stroke-width: 3;
-}
-
-.forests circle {
-  fill: #7d9464;
-  opacity: 0.3;
-}
-
-.mountains path {
-  fill: none;
-  stroke: #8a7452;
-  stroke-width: 2;
-  stroke-linejoin: round;
-  opacity: 0.75;
-}
-
-.rivers path {
-  fill: none;
-  stroke: #6f9cb2;
-  stroke-width: 2;
-  opacity: 0.85;
-  stroke-linecap: round;
-}
-
-.lakes ellipse {
-  fill: #a3c2c9;
-  stroke: #6b5636;
-  stroke-width: 1;
-}
-
-.lakes .isle {
-  fill: #ece1c4;
 }
 
 .wall-under {
@@ -309,22 +368,6 @@ body {
   paint-order: stroke;
   stroke: rgba(240, 235, 215, 0.75);
   stroke-width: 2.6px;
-}
-
-.swamps path {
-  stroke: #7d97a8;
-  stroke-width: 1.6;
-  fill: none;
-  opacity: 0.7;
-  stroke-linecap: round;
-}
-
-.waves path {
-  stroke: #8fb0ba;
-  stroke-width: 1.4;
-  fill: none;
-  opacity: 0.55;
-  stroke-linecap: round;
 }
 
 .compass-ring {

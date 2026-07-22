@@ -7,16 +7,13 @@ import {
   ESSOS,
   SOTHORYOS,
   ISLANDS,
-  RIVERS,
-  LAKES,
-  ISLE_OF_FACES,
-  FORESTS,
+  RIDGE_CHAINS,
   smoothClosed,
 } from '/src/map/shapes.js'
 
 const W = 2000
 const H = 1440
-const SS = 2.5 // суперсэмплинг подложки
+const SS = 3 // суперсэмплинг подложки
 
 // ── шум ──
 const hash = (x, y) => {
@@ -37,37 +34,7 @@ function fbm(x, y, oct = 4) {
   return s
 }
 
-// ── горные цепи: [точки полилинии], ширина, высота ──
-const CHAINS = [
-  // Вестерос
-  { pts: [[185, 155], [240, 118], [300, 112], [345, 118]], w: 34, h: 1.0 }, // Клыки Мороза
-  { pts: [[165, 260], [195, 290]], w: 22, h: 0.55 },
-  { pts: [[498, 268], [535, 315], [545, 355]], w: 24, h: 0.6 }, // северные горы
-  { pts: [[452, 648], [468, 688], [488, 726], [505, 752]], w: 30, h: 0.95 }, // Лунные горы
-  { pts: [[352, 1092], [400, 1098], [445, 1092], [470, 1108]], w: 30, h: 0.85 }, // Красные горы
-  { pts: [[300, 785], [275, 815], [255, 845]], w: 22, h: 0.45 }, // холмы Запада
-  { pts: [[220, 900], [240, 930]], w: 16, h: 0.3 },
-  // Эссос
-  { pts: [[855, 535], [900, 558], [925, 585]], w: 24, h: 0.5 }, // холмы Норвоса
-  { pts: [[1398, 400], [1392, 480], [1400, 560], [1392, 645]], w: 34, h: 1.05 }, // Кости
-  { pts: [[1085, 935], [1115, 985], [1130, 1030]], w: 24, h: 0.65 }, // Валирия
-  { pts: [[1770, 1025], [1815, 985], [1855, 950]], w: 26, h: 0.8 }, // горы Асшая
-  { pts: [[1390, 245], [1445, 252], [1480, 262]], w: 18, h: 0.5 }, // Иб
-  { pts: [[1330, 540], [1345, 548]], w: 14, h: 0.5 }, // Матерь Гор
-  { pts: [[750, 505], [790, 535]], w: 18, h: 0.4 }, // Бархатные холмы
-  { pts: [[795, 425], [835, 445]], w: 18, h: 0.35 }, // холмы Андалоса
-  { pts: [[1392, 645], [1400, 700]], w: 26, h: 0.7 }, // Кости южнее
-  { pts: [[280, 90], [330, 75]], w: 20, h: 0.6 }, // север Клыков
-  { pts: [[560, 630], [580, 648]], w: 12, h: 0.35 }, // холмы Перстов
-  { pts: [[292, 782], [300, 792]], w: 10, h: 0.4 }, // Золотой Зуб
-  { pts: [[452, 1108], [485, 1122], [505, 1118]], w: 20, h: 0.55 }, // Костяной Путь
-  { pts: [[598, 292], [606, 300]], w: 12, h: 0.45 }, // Скагос
-  { pts: [[790, 900], [815, 925]], w: 16, h: 0.3 }, // Спорные холмы
-  // Соториос и Ленг
-  { pts: [[1130, 1250], [1190, 1300], [1160, 1350]], w: 30, h: 0.55 },
-  { pts: [[1240, 1230], [1290, 1290]], w: 26, h: 0.45 },
-  { pts: [[1688, 1050], [1694, 1090]], w: 12, h: 0.35 },
-]
+const CHAINS = RIDGE_CHAINS
 
 function distToSeg(px, py, ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay
@@ -248,8 +215,9 @@ for (let sy = 0; sy < H * SS; sy++) {
       const t = Math.max(0, 1 - wy / 240)
       r = r + (240 - r) * t * 0.8; g = g + (242 - g) * t * 0.8; b = b + (244 - b) * t * 0.8
     }
-    // зерно
-    const grain = fbm(wx * 0.11, wy * 0.11, 3) * 18 - 9
+    // зерно; на скалах — грубее (осыпи и складки)
+    const gAmp = 18 + Math.min(1.2, h) * 26
+    const grain = fbm(wx * 0.11, wy * 0.11, 3) * gAmp - gAmp / 2
     r = (r + grain) * shade; g = (g + grain) * shade; b = (b + grain) * shade
     px[o] = Math.max(0, Math.min(255, r))
     px[o + 1] = Math.max(0, Math.min(255, g))
@@ -260,78 +228,7 @@ for (let sy = 0; sy < H * SS; sy++) {
 ctx.putImageData(img, 0, 0)
 console.timeEnd('render')
 
-// ── векторные детали поверх: берега, реки, озёра, леса ──
-ctx.save()
-ctx.scale(SS, SS)
-ctx.lineJoin = 'round'
 
-// контур берега
-ctx.strokeStyle = 'rgba(84,66,42,0.85)'
-ctx.lineWidth = 1.4
-ctx.stroke(essosPath); ctx.stroke(sothPath)
-for (const p of islandPaths) ctx.stroke(p)
-for (const r of Object.values(REGIONS)) if (r.polygon) ctx.stroke(regionPath(r))
-
-// реки с сужением к истоку (первая точка пути — исток)
-for (const d of RIVERS) {
-  const path = new Path2D(d)
-  ctx.strokeStyle = 'rgba(210,228,232,0.5)'
-  ctx.lineWidth = 4.0
-  ctx.lineCap = 'round'
-  ctx.stroke(path)
-}
-for (const d of RIVERS) {
-  const path = new Path2D(d)
-  ctx.strokeStyle = '#5d8fa6'
-  ctx.lineWidth = 2
-  ctx.stroke(path)
-}
-for (const [cx, cy, rx, ry] of LAKES) {
-  ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7)
-  ctx.fillStyle = '#8fb9c4'; ctx.fill()
-  ctx.strokeStyle = '#5d8fa6'; ctx.lineWidth = 1.2; ctx.stroke()
-}
-ctx.beginPath()
-ctx.ellipse(ISLE_OF_FACES[0], ISLE_OF_FACES[1], ISLE_OF_FACES[2], ISLE_OF_FACES[3], 0, 0, 7)
-ctx.fillStyle = '#a9bb8a'; ctx.fill()
-
-// леса: россыпь деревьев в пятнах
-const treeType = (cx, cy) => {
-  if (cy < 700) return 'conifer'
-  if (cy > 1180) return 'palm'
-  if (cx > 1000 && cy > 1150) return 'jungle'
-  return 'decid'
-}
-for (const [cx, cy, rad] of FORESTS) {
-  const type = treeType(cx, cy)
-  const count = Math.round(rad * rad * 0.07)
-  for (let i = 0; i < count; i++) {
-    const a = hash(i, cx) * Math.PI * 2
-    const rr = Math.sqrt(hash(cx + i, cy)) * rad * 0.92
-    const tx = cx + Math.cos(a) * rr
-    const ty = cy + Math.sin(a) * rr * 0.85
-    const s = 2.6 + hash(i, ty) * 1.8
-    // тень
-    ctx.fillStyle = 'rgba(60,70,50,0.28)'
-    ctx.beginPath(); ctx.ellipse(tx + 1, ty + s * 0.7, s * 0.8, s * 0.35, 0, 0, 7); ctx.fill()
-    if (type === 'conifer') {
-      ctx.fillStyle = '#4d6a46'
-      ctx.beginPath()
-      ctx.moveTo(tx, ty - s * 1.7); ctx.lineTo(tx - s * 0.7, ty + s * 0.5); ctx.lineTo(tx + s * 0.7, ty + s * 0.5)
-      ctx.closePath(); ctx.fill()
-      ctx.strokeStyle = '#3c5438'; ctx.lineWidth = 0.4; ctx.stroke()
-    } else if (type === 'jungle' || type === 'palm') {
-      ctx.fillStyle = type === 'palm' ? '#5b8248' : '#3f6b3c'
-      ctx.beginPath(); ctx.ellipse(tx, ty - s * 0.4, s * 0.9, s * 0.65, 0, 0, 7); ctx.fill()
-    } else {
-      ctx.fillStyle = '#5d7f4a'
-      ctx.beginPath(); ctx.arc(tx, ty - s * 0.5, s * 0.75, 0, 7); ctx.fill()
-      ctx.strokeStyle = '#48633a'; ctx.lineWidth = 0.4; ctx.stroke()
-    }
-  }
-}
-ctx.restore()
-
-window.__dataUrl = out.toDataURL('image/webp', 0.82)
+window.__dataUrl = out.toDataURL('image/webp', 0.86)
 document.title = 'DONE'
 console.log('terrain ready, bytes≈', Math.round(window.__dataUrl.length * 0.75))

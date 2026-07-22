@@ -9,6 +9,15 @@ import {
 import { REGIONS } from '../data/regions.js'
 import { LOCATIONS } from '../data/locations.js'
 import {
+  ESSOS,
+  SOTHORYOS,
+  ISLANDS,
+  RIVERS,
+  LAKES,
+  ISLE_OF_FACES,
+  FORESTS,
+  SWAMPS,
+  PEAKS,
   WALL,
   COMPASS,
   CONTINENT_LABELS,
@@ -60,6 +69,34 @@ const levelsOf = (ppu) => ({
   minor: ppu >= 1.55,
   fadeWorld: ppu > 2.2,
 })
+
+// Векторный пик: светлая и теневая грань, контур, снежная шапка
+function Peak({ x, y, s }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <path
+        d={`M${-s},${s * 0.6} L0,${-s} L${s},${s * 0.6} Z`}
+        className="peak-light"
+      />
+      <path
+        d={`M0,${-s} L${s},${s * 0.6} L${s * 0.45},${s * 0.6} L0,${-s * 0.35} Z`}
+        className="peak-dark"
+      />
+      <path
+        d={`M${-s},${s * 0.6} L0,${-s} L${s},${s * 0.6}`}
+        className="peak-line"
+      />
+      {s > 11 && (
+        <path
+          d={`M${-s * 0.2},${-s * 0.52} L0,${-s} L${s * 0.2},${-s * 0.52} L0,${-s * 0.3} Z`}
+          className="peak-snow"
+        />
+      )}
+    </g>
+  )
+}
+
+const treePattern = (cy) => (cy < 700 ? 'pat-conif' : cy > 1150 ? 'pat-trop' : 'pat-decid')
 
 const MapView = forwardRef(function MapView(
   { visibleIds, regionFilter, selectedId, onSelect, onRegionClick, onBackgroundTap, filtered },
@@ -374,6 +411,17 @@ const MapView = forwardRef(function MapView(
         <clipPath id="sheet">
           <rect width={VB_W} height={VB_H} />
         </clipPath>
+        <pattern id="pat-conif" width="13" height="15" patternUnits="userSpaceOnUse" patternTransform="rotate(5)">
+          <path d="M6,12 L6,10 M6,10 L3.2,10.8 L6,4.5 L8.8,10.8 Z M6,7.6 L3.8,8.4 L6,3.6 L8.2,8.4 Z" className="tree-conif" />
+        </pattern>
+        <pattern id="pat-decid" width="14" height="13" patternUnits="userSpaceOnUse" patternTransform="rotate(-7)">
+          <circle cx="7" cy="6" r="3.1" className="tree-decid" />
+          <path d="M7,9.4 L7,11.4" className="tree-trunk" />
+        </pattern>
+        <pattern id="pat-trop" width="15" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(3)">
+          <ellipse cx="7.5" cy="6.5" rx="3.6" ry="2.6" className="tree-trop" />
+          <path d="M7.5,9.4 L7.5,11.6" className="tree-trunk" />
+        </pattern>
       </defs>
 
       <rect width={VB_W} height={VB_H} fill="#9db8bf" />
@@ -389,6 +437,65 @@ const MapView = forwardRef(function MapView(
             height={VB_H}
             preserveAspectRatio="none"
           />
+
+          {/* ── чёткие векторные детали: берега, вода, леса, горы ── */}
+          <g className="coastlines">
+            <path d={ESSOS} />
+            <path d={SOTHORYOS} />
+            {Object.entries(REGIONS).map(
+              ([key, r]) => r.polygon && <path key={key} d={REGION_PATHS[key]} />,
+            )}
+            {ISLANDS.map(([cx, cy, rx, ry, rot], i) => (
+              <ellipse
+                key={i}
+                cx={cx}
+                cy={cy}
+                rx={rx}
+                ry={ry}
+                transform={rot ? `rotate(${rot} ${cx} ${cy})` : undefined}
+              />
+            ))}
+          </g>
+          <g className="rivers-halo">
+            {RIVERS.map((d, i) => (
+              <path key={i} d={d} />
+            ))}
+          </g>
+          <g className="rivers">
+            {RIVERS.map((d, i) => (
+              <path key={i} d={d} />
+            ))}
+          </g>
+          <g className="lakes">
+            {LAKES.map(([cx, cy, rx, ry], i) => (
+              <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} />
+            ))}
+            <ellipse
+              className="isle"
+              cx={ISLE_OF_FACES[0]}
+              cy={ISLE_OF_FACES[1]}
+              rx={ISLE_OF_FACES[2]}
+              ry={ISLE_OF_FACES[3]}
+            />
+          </g>
+          <g className="forest-blobs">
+            {FORESTS.map(([cx, cy, r], i) => (
+              <g key={i}>
+                <circle cx={cx} cy={cy} r={r} className="forest-base" />
+                <circle cx={cx} cy={cy} r={r} fill={`url(#${treePattern(cy)})`} />
+              </g>
+            ))}
+          </g>
+          <g className="swamps">
+            {SWAMPS.map(([sx, sy], i) => (
+              <path key={i} d={`M${sx - 8},${sy} h6 m3,0 h6 M${sx - 5},${sy + 4} h5 m3,0 h5`} />
+            ))}
+          </g>
+          <g className="peaks">
+            {PEAKS.map(([px2, py2, ps], i) => (
+              <Peak key={i} x={px2} y={py2} s={ps} />
+            ))}
+          </g>
 
           {/* ── регионы Вестероса (интерактивные) ── */}
           {Object.entries(REGIONS).map(([key, r]) => {
