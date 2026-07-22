@@ -131,7 +131,7 @@ export const LOCATIONS = [
   },
   {
     id: 'runestone', name: 'Рунный Камень', en: 'Runestone', type: 'castle',
-    region: 'vale', x: 543, y: 742,
+    region: 'vale', x: 536, y: 734,
     desc: 'Приморский замок древнего дома Ройсов, ведущих род от Первых Людей. Их бронзовые доспехи покрыты рунами, которые, как верят, хранят от ран.',
     house: 'Дом Ройс',
   },
@@ -172,7 +172,7 @@ export const LOCATIONS = [
   },
   {
     id: 'maidenpool', name: 'Девичий Пруд', en: 'Maidenpool', type: 'town',
-    region: 'riverlands', x: 420, y: 791,
+    region: 'riverlands', x: 400, y: 792,
     desc: 'Портовый городок у залива Крабов, названный в честь пруда, где, по легенде, купалась Джонквиль из песен о Флориане-дураке.',
     house: 'Дом Мутон',
   },
@@ -196,7 +196,7 @@ export const LOCATIONS = [
   },
   {
     id: 'lordsport', name: 'Лордспорт', en: 'Lordsport', type: 'town',
-    region: 'ironislands', x: 168, y: 706,
+    region: 'ironislands', x: 170, y: 712,
     desc: 'Главная гавань острова Пайк, единственный городок в окрестностях замка Грейджоев.',
   },
   {
@@ -220,7 +220,7 @@ export const LOCATIONS = [
   },
   {
     id: 'lannisport', name: 'Ланниспорт', en: 'Lannisport', type: 'city',
-    region: 'westerlands', x: 204, y: 813,
+    region: 'westerlands', x: 198, y: 822,
     desc: 'Крупный портовый город под стенами Утёса Кастерли, дом ланниспортских Ланнистеров. Славится золотых дел мастерами.',
     house: 'Дом Ланнистер',
   },
@@ -237,7 +237,7 @@ export const LOCATIONS = [
   },
   {
     id: 'crag', name: 'Крэг', en: 'The Crag', type: 'castle',
-    region: 'westerlands', x: 210, y: 786,
+    region: 'westerlands', x: 232, y: 768,
     desc: 'Полуразрушенный приморский замок обедневшего, но древнего и гордого дома Вестерлингов.',
     house: 'Дом Вестерлинг',
   },
@@ -261,7 +261,7 @@ export const LOCATIONS = [
   },
   {
     id: 'rosby', name: 'Росби', en: 'Rosby', type: 'castle',
-    region: 'crownlands', x: 505, y: 868,
+    region: 'crownlands', x: 500, y: 856,
     desc: 'Небольшой замок в дне пути от столицы, на дороге к Синему Долу.',
     house: 'Дом Росби',
   },
@@ -286,7 +286,7 @@ export const LOCATIONS = [
   },
   {
     id: 'summerhall', name: 'Летний Замок', en: 'Summerhall', type: 'ruin',
-    region: 'stormlands', x: 452, y: 1040,
+    region: 'stormlands', x: 460, y: 1038,
     desc: 'Сгоревшая летняя резиденция Таргариенов на границе Дорнийских Марок. Пожар, погубивший дворец и многих из королевской семьи, окружён недомолвками до сих пор.',
   },
   {
@@ -303,7 +303,7 @@ export const LOCATIONS = [
   },
   {
     id: 'capewrath', name: 'Мыс Гнева', en: 'Cape Wrath', type: 'landmark',
-    region: 'stormlands', x: 552, y: 1062,
+    region: 'stormlands', x: 565, y: 1064,
     desc: 'Огромный лесистый полуостров, о который разбиваются осенние шторма Узкого моря. Почти весь покрыт Дождливым лесом.',
   },
 
@@ -359,7 +359,7 @@ export const LOCATIONS = [
   },
   {
     id: 'watergardens', name: 'Водные Сады', en: 'Water Gardens', type: 'castle',
-    region: 'dorne', x: 600, y: 1160,
+    region: 'dorne', x: 580, y: 1172,
     desc: 'Дворец удовольствий Мартеллов на берегу Летнего моря — розовый мрамор, апельсиновые рощи и пруды, где вместе играют дети лордов и простолюдинов.',
     house: 'Дом Мартелл',
   },
@@ -383,7 +383,7 @@ export const LOCATIONS = [
   },
   {
     id: 'plankytown', name: 'Дощатый город', en: 'Planky Town', type: 'town',
-    region: 'dorne', x: 611, y: 1138,
+    region: 'dorne', x: 600, y: 1152,
     desc: 'Плавучий порт в устье Зеленокровной: город из лодок, барж и плотов, связанных канатами. Здесь торгуют сироты Зеленокровной — потомки ройнаров.',
   },
 
@@ -557,7 +557,7 @@ export const LOCATIONS = [
   },
   {
     id: 'basilisks', name: 'Василисковы острова', en: 'Basilisk Isles', type: 'landmark',
-    region: 'sothoryos', x: 1085, y: 1135,
+    region: 'sothoryos', x: 1058, y: 1122,
     desc: 'Дикий архипелаг у северного берега Соториоса — притон пиратов, работорговцев и висельников со всего света. Главное гнездо — Табор Костей.',
   },
   {
@@ -585,7 +585,7 @@ export const LOCATIONS = [
   },
   {
     id: 'widowswatch', name: 'Вдовий Дозор', en: "Widow's Watch", type: 'castle',
-    region: 'north', x: 524, y: 489,
+    region: 'north', x: 538, y: 474,
     desc: 'Замок на восточном мысу Севера, глядящий на Дрожащее море. Назван в память о жёнах моряков, ждавших мужей из плаваний.',
   },
   {
@@ -625,7 +625,7 @@ export const LOCATIONS = [
   },
   {
     id: 'darry', name: 'Дарри', en: 'Castle Darry', type: 'castle',
-    region: 'riverlands', x: 408, y: 730,
+    region: 'riverlands', x: 404, y: 712,
     desc: 'Замок на Королевском тракте у Трезубца. Дарри были одними из самых верных сторонников драконьих королей — и не скрывают этого.',
     house: 'Дом Дарри',
   },
@@ -637,7 +637,7 @@ export const LOCATIONS = [
   },
   {
     id: 'stonehedge', name: 'Каменная Изгородь', en: 'Stone Hedge', type: 'castle',
-    region: 'riverlands', x: 332, y: 748,
+    region: 'riverlands', x: 336, y: 758,
     desc: 'Замок Бракенов на Красном Зубце, через реку от владений их извечных врагов Блэквудов.',
     house: 'Дом Бракен',
   },
@@ -650,7 +650,7 @@ export const LOCATIONS = [
   // ── Дополнение: Запад, Королевские и Штормовые земли ────────────────
   {
     id: 'ashemark', name: 'Эшмарк', en: 'Ashemark', type: 'castle',
-    region: 'westerlands', x: 237, y: 774,
+    region: 'westerlands', x: 245, y: 792,
     desc: 'Замок Марбрандов в холмах у истоков Камнегонки, один из сильнейших домов Запада после Ланнистеров.',
     house: 'Дом Марбранд',
   },
@@ -672,7 +672,7 @@ export const LOCATIONS = [
   },
   {
     id: 'nightsong', name: 'Ночная Песнь', en: 'Nightsong', type: 'castle',
-    region: 'stormlands', x: 430, y: 1035,
+    region: 'stormlands', x: 424, y: 1046,
     desc: 'Пограничная крепость Каронов в Красных горах. Лорды Ночной Песни носят титул маркграфов и веками отбивают набеги дорнийцев с перевалов.',
   },
 
@@ -725,7 +725,7 @@ export const LOCATIONS = [
   },
   {
     id: 'volontherys', name: 'Волон Терис', en: 'Volon Therys', type: 'city',
-    region: 'freecities', x: 932, y: 1058,
+    region: 'freecities', x: 920, y: 1050,
     desc: 'Волантийский городок на западном берегу Ройны выше дельты, место переправ и наёмничьих лагерей.',
   },
   {
@@ -771,7 +771,7 @@ export const LOCATIONS = [
   },
   {
     id: 'sisterton', name: 'Систертон', en: 'Sisterton', type: 'town',
-    region: 'vale', x: 478, y: 606,
+    region: 'vale', x: 484, y: 614,
     desc: 'Единственный городок Трёх Сестёр, порт контрабандистов на Милой Сестре. Над гаванью горит маяк-костёр дома Боррелов.',
   },
   {

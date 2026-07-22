@@ -13,7 +13,7 @@ export const REGIONS = {
     name: 'Стена и земли за ней',
     continent: 'westeros',
     color: '#9fb4c7',
-    label: { text: 'ЗА СТЕНОЙ', x: 345, y: 120 },
+    label: { text: 'ЗА СТЕНОЙ', x: 438, y: 148 },
     polygon: [
       [150, 232], [140, 150], [160, 110], [200, 70], [250, 50], [320, 42],
       [390, 52], [440, 72], [500, 100], [540, 140], [558, 185], [545, 224],
@@ -36,7 +36,7 @@ export const REGIONS = {
     name: 'Долина Аррен',
     continent: 'westeros',
     color: '#aebfd4',
-    label: { text: 'ДОЛИНА', x: 505, y: 755 },
+    label: { text: 'ДОЛИНА', x: 548, y: 712 },
     polygon: [
       [390, 660], [450, 620], [490, 600], [520, 625], [560, 610], [585, 620],
       [555, 640], [590, 655], [550, 670], [575, 700], [540, 730], [560, 770],
@@ -47,14 +47,14 @@ export const REGIONS = {
     name: 'Железные острова',
     continent: 'westeros',
     color: '#a8b5ab',
-    label: { text: 'ЖЕЛЕЗНЫЕ О-ВА', x: 172, y: 752 },
+    label: { text: 'ЖЕЛЕЗНЫЕ О-ВА', x: 175, y: 612 },
     polygon: null,
   },
   riverlands: {
     name: 'Речные земли',
     continent: 'westeros',
     color: '#b9cbb2',
-    label: { text: 'РЕЧНЫЕ ЗЕМЛИ', x: 330, y: 725 },
+    label: { text: 'РЕЧНЫЕ ЗЕМЛИ', x: 368, y: 672 },
     polygon: [
       [245, 655], [330, 668], [390, 660], [410, 720], [430, 790], [340, 815],
       [300, 790], [225, 760], [245, 740], [230, 700], [255, 680],
@@ -64,7 +64,7 @@ export const REGIONS = {
     name: 'Западные земли',
     continent: 'westeros',
     color: '#d1bfa4',
-    label: { text: 'ЗАПАДНЫЕ\nЗЕМЛИ', x: 252, y: 848 },
+    label: { text: 'ЗАПАДНЫЕ\nЗЕМЛИ', x: 250, y: 878 },
     polygon: [
       [225, 760], [300, 790], [340, 815], [330, 890], [215, 940],
       [195, 910], [210, 870], [185, 830], [200, 790],
@@ -74,7 +74,7 @@ export const REGIONS = {
     name: 'Королевские земли',
     continent: 'westeros',
     color: '#cdbfb0',
-    label: { text: 'КОРОЛЕВСКИЕ\nЗЕМЛИ', x: 448, y: 852 },
+    label: { text: 'КОРОЛЕВСКИЕ\nЗЕМЛИ', x: 448, y: 912 },
     polygon: [
       [430, 790], [470, 810], [510, 830], [545, 820], [560, 845], [520, 860],
       [505, 880], [520, 905], [540, 920], [480, 935], [410, 935], [370, 870],
@@ -96,7 +96,7 @@ export const REGIONS = {
     name: 'Простор',
     continent: 'westeros',
     color: '#c3cf9f',
-    label: { text: 'ПРОСТОР', x: 285, y: 985 },
+    label: { text: 'ПРОСТОР', x: 320, y: 1035 },
     polygon: [
       [215, 940], [330, 890], [340, 815], [370, 870], [410, 935], [400, 990],
       [420, 1050], [370, 1075], [330, 1115], [280, 1125], [240, 1110],
@@ -107,7 +107,7 @@ export const REGIONS = {
     name: 'Дорн',
     continent: 'westeros',
     color: '#dbc491',
-    label: { text: 'ДОРН', x: 530, y: 1172 },
+    label: { text: 'ДОРН', x: 445, y: 1180 },
     polygon: [
       [495, 1090], [530, 1105], [585, 1120], [620, 1140], [640, 1160],
       [600, 1185], [540, 1200], [480, 1190], [430, 1205], [380, 1190],
@@ -133,21 +133,21 @@ export const REGIONS = {
     name: 'Залив Работорговцев',
     continent: 'essos',
     color: '#cbb694',
-    label: { text: 'ЗАЛИВ\nРАБОТОРГОВЦЕВ', x: 1205, y: 888 },
+    label: { text: 'ЗАЛИВ\nРАБОТОРГОВЦЕВ', x: 1258, y: 938 },
     polygon: null,
   },
   valyria: {
     name: 'Валирия',
     continent: 'essos',
     color: '#b3a08e',
-    label: { text: 'ВАЛИРИЯ', x: 1112, y: 985 },
+    label: { text: 'ВАЛИРИЯ', x: 1042, y: 1048 },
     polygon: null,
   },
   qarth: {
     name: 'Кварт и Красная пустошь',
     continent: 'essos',
     color: '#d6bd8d',
-    label: { text: 'КРАСНАЯ ПУСТОШЬ', x: 1408, y: 872 },
+    label: { text: 'КРАСНАЯ ПУСТОШЬ', x: 1455, y: 858 },
     polygon: null,
   },
   fareast: {
@@ -169,7 +169,7 @@ export const REGIONS = {
     name: 'Ступени',
     continent: 'south',
     color: '#b9b4a0',
-    label: { text: 'СТУПЕНИ', x: 672, y: 1130 },
+    label: { text: 'СТУПЕНИ', x: 700, y: 1088 },
     polygon: null,
   },
   summerisles: {
@@ -183,7 +183,7 @@ export const REGIONS = {
     name: 'Соториос',
     continent: 'south',
     color: '#9dbb8b',
-    label: { text: 'СОТОРИОС', x: 1180, y: 1290 },
+    label: { text: 'СОТОРИОС', x: 1105, y: 1382 },
     polygon: null,
   },
 }

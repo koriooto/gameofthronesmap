@@ -26,6 +26,7 @@ import {
   smoothClosed,
 } from '../map/shapes.js'
 import { MarkerGlyph } from '../map/markers.jsx'
+import { LABEL_NUDGES } from '../data/labelNudges.js'
 import terrainUrl from '../assets/terrain.webp'
 
 const VB_W = 2000
@@ -600,8 +601,10 @@ const MapView = forwardRef(function MapView(
                 isHover ||
                 (visible && (loc.major ? showMajorLabels : showMinorLabels))
               // Подпись всегда над иконкой; у выбранного маркера ореол
-              // r=10, поэтому поднимаем чуть выше.
+              // r=10, поэтому поднимаем чуть выше. Горизонтальный сдвиг —
+              // только чтобы развести коллизии.
               const ly = isSel ? -16 : -11
+              const lx = LABEL_NUDGES[loc.id] || 0
               return (
                 <g
                   key={loc.id}
@@ -628,6 +631,7 @@ const MapView = forwardRef(function MapView(
                     <MarkerGlyph type={loc.type} />
                     {showLabel && (
                       <text
+                        x={lx}
                         y={ly}
                         textAnchor="middle"
                         className={`marker-label ${loc.major ? 'major' : ''}`}
