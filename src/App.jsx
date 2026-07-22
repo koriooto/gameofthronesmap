@@ -85,7 +85,11 @@ export default function App() {
           regionFilter={regionFilter}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          onRegionClick={(key) => chooseRegion(regionFilter === key ? null : key)}
+          onRegionClick={(key) => {
+            // Повторный тап по уже выбранному региону не сбрасывает вид:
+            // на тач-экранах это случайные промахи мимо маркеров.
+            if (key !== regionFilter) chooseRegion(key)
+          }}
         />
 
         <div className="zoom-controls">

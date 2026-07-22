@@ -457,7 +457,8 @@ const MapView = forwardRef(function MapView(
               >
                 <g transform={`scale(${s})`}>
                   {isSel && <circle r="10" className="marker-halo" />}
-                  <circle r="9" fill="transparent" />
+                  {/* невидимая зона тапа ~35px на любом зуме */}
+                  <circle r="15" fill="transparent" />
                   <MarkerGlyph type={loc.type} />
                   {showLabel && (
                     <text
