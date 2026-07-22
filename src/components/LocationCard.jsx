@@ -1,6 +1,7 @@
 import { REGIONS, TYPES, CONTINENTS } from '../data/regions.js'
 import { HOUSES } from '../data/houses.js'
 import { TypeIcon } from '../map/markers.jsx'
+import Sigil from './Sigil.jsx'
 
 export default function LocationCard({ loc, onClose }) {
   const region = REGIONS[loc.region]
@@ -27,12 +28,13 @@ export default function LocationCard({ loc, onClose }) {
       <p className="card-desc">{loc.desc}</p>
       {house && (
         <div className="card-house">
-          <div>
-            <span className="house-label">Герб:</span> {house.sigil}
+          <Sigil house={loc.house} />
+          <div className="card-house-text">
+            <div>
+              <span className="house-label">Герб:</span> {house.sigil}
+            </div>
+            {house.motto && <div className="house-motto">«{house.motto}»</div>}
           </div>
-          {house.motto && (
-            <div className="house-motto">«{house.motto}»</div>
-          )}
         </div>
       )}
     </div>

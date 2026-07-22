@@ -8,7 +8,6 @@ import {
 } from 'react'
 import { REGIONS } from '../data/regions.js'
 import { LOCATIONS } from '../data/locations.js'
-import { LABEL_OVERRIDES } from '../data/labelOverrides.js'
 import {
   ESSOS,
   SOTHORYOS,
@@ -19,8 +18,13 @@ import {
   WALL,
   MOUNTAINS,
   FORESTS,
+  SWAMPS,
+  WAVES,
+  COMPASS,
+  CONTINENT_LABELS,
   SEA_LABELS,
   FAR_NORTH_LABEL,
+  smoothClosed,
 } from '../map/shapes.js'
 import { MarkerGlyph } from '../map/markers.jsx'
 
@@ -29,8 +33,15 @@ const VB_H = 1440
 const MIN_K = 0.85
 const MAX_K = 14
 
-const polyPoints = (pts) => pts.map((p) => p.join(',')).join(' ')
 const clampK = (k) => Math.max(MIN_K, Math.min(MAX_K, k))
+
+// Сглаженные контуры вестеросских регионов (по одному разу на модуль)
+const REGION_PATHS = Object.fromEntries(
+  Object.entries(REGIONS).map(([key, r]) => [
+    key,
+    r.polygon ? smoothClosed(r.polygon) : null,
+  ]),
+)
 
 // Не даём утащить лист карты целиком за экран: полоса в PAN_MARGIN единиц
 // от края листа всегда остаётся в поле зрения.
@@ -65,8 +76,8 @@ function LandShapes() {
     <>
       <path d={ESSOS} />
       <path d={SOTHORYOS} />
-      {Object.values(REGIONS).map(
-        (r) => r.polygon && <polygon key={r.label.text} points={polyPoints(r.polygon)} />,
+      {Object.entries(REGIONS).map(
+        ([key, r]) => r.polygon && <path key={key} d={REGION_PATHS[key]} />,
       )}
       {ISLANDS.map(([cx, cy, rx, ry, rot], i) => (
         <ellipse
@@ -413,9 +424,9 @@ const MapView = forwardRef(function MapView(
             const active = regionFilter === key || hoverRegion === key
             const dimmed = regionFilter && regionFilter !== key
             return (
-              <polygon
+              <path
                 key={key}
-                points={polyPoints(r.polygon)}
+                d={REGION_PATHS[key]}
                 fill={r.color}
                 className="region-shape"
                 style={{ fillOpacity: active ? 0.62 : dimmed ? 0.12 : 0.34 }}
@@ -461,12 +472,22 @@ const MapView = forwardRef(function MapView(
               ry={ISLE_OF_FACES[3]}
             />
           </g>
+          <g className="swamps">
+            {SWAMPS.map(([sx, sy], i) => (
+              <path key={i} d={`M${sx - 8},${sy} h6 m3,0 h6 M${sx - 5},${sy + 4} h5 m3,0 h5`} />
+            ))}
+          </g>
+          <g className="waves">
+            {WAVES.map(([wx, wy], i) => (
+              <path key={i} d={`M${wx - 10},${wy} q5,-4 10,0 q5,4 10,0 M${wx - 5},${wy + 5} q4,-3 8,0 q4,3 8,0`} />
+            ))}
+          </g>
           <path d={WALL} className="wall-under" />
           <path d={WALL} className="wall" />
 
-          {/* ── подписи морей и регионов ── */}
-          <g className="sea-labels" style={{ opacity: fadeWorld ? 0 : 1 }}>
-            {SEA_LABELS.map(([text, lx, ly, rot, size]) => (
+          {/* ── подписи материков (мировой размер, тают на зуме) ── */}
+          <g className="continent-labels" style={{ opacity: fadeWorld ? 0 : 1 }}>
+            {CONTINENT_LABELS.map(([text, lx, ly, rot, size]) => (
               <text
                 key={text}
                 x={lx}
@@ -477,29 +498,50 @@ const MapView = forwardRef(function MapView(
                 {text}
               </text>
             ))}
-            <text x={FAR_NORTH_LABEL.x} y={FAR_NORTH_LABEL.y} fontSize="20">
-              {FAR_NORTH_LABEL.text}
-            </text>
           </g>
-          <g className="region-labels" style={{ opacity: fadeWorld ? 0 : 1 }}>
+
+          {/* ── подписи морей и регионов: постоянный экранный размер ── */}
+          <g className="sea-labels">
+            {SEA_LABELS.map(([text, lx, ly, rot, size]) => (
+              <g key={text} transform={`translate(${lx} ${ly})${rot ? ` rotate(${rot})` : ''}`}>
+                <text fontSize={size}>{text}</text>
+              </g>
+            ))}
+            <g transform={`translate(${FAR_NORTH_LABEL.x} ${FAR_NORTH_LABEL.y})`}>
+              <text fontSize="20">{FAR_NORTH_LABEL.text}</text>
+            </g>
+          </g>
+          <g className="region-labels">
             {Object.entries(REGIONS).map(([key, r]) => {
               const lines = r.label.text.split('\n')
               const dimmed = regionFilter && regionFilter !== key
               return (
-                <text
-                  key={key}
-                  x={r.label.x}
-                  y={r.label.y}
-                  style={{ opacity: dimmed ? 0.25 : 0.8 }}
-                >
-                  {lines.map((ln, i) => (
-                    <tspan key={i} x={r.label.x} dy={i === 0 ? 0 : 15}>
-                      {ln}
-                    </tspan>
-                  ))}
-                </text>
+                <g key={key} transform={`translate(${r.label.x} ${r.label.y})`}>
+                  <text style={{ opacity: dimmed ? 0.25 : 0.8 }}>
+                    {lines.map((ln, i) => (
+                      <tspan key={i} x="0" dy={i === 0 ? 0 : 15}>
+                        {ln}
+                      </tspan>
+                    ))}
+                  </text>
+                </g>
               )
             })}
+          </g>
+
+          {/* ── роза ветров ── */}
+          <g className="compass" transform={`translate(${COMPASS.x} ${COMPASS.y})`}>
+            <circle r={COMPASS.r} className="compass-ring" />
+            <circle r={COMPASS.r * 0.72} className="compass-ring" />
+            {[0, 45, 90, 135].map((a) => (
+              <path
+                key={a}
+                d={`M0,${-COMPASS.r} L6,0 L0,${COMPASS.r} L-6,0 Z`}
+                transform={`rotate(${a})`}
+                className={a % 90 === 0 ? 'compass-major' : 'compass-minor'}
+              />
+            ))}
+            <text y={-COMPASS.r - 8} className="compass-n">С</text>
           </g>
 
           {/* ── маркеры ── */}
@@ -516,13 +558,9 @@ const MapView = forwardRef(function MapView(
                 isSel ||
                 isHover ||
                 (visible && (loc.major ? showMajorLabels : showMinorLabels))
-              const o = LABEL_OVERRIDES[loc.id]
-              // У выбранного маркера появляется ореол r=10 — отодвигаем
-              // подпись, чтобы текст не налезал на значок.
-              const off = isSel ? 1.6 : 1
-              const lx = (o?.x ?? 0) * off
-              const ly = o == null ? (isSel ? 24 : 16) : o.y * off
-              const anchor = o?.a ?? 'middle'
+              // Подпись всегда над иконкой; у выбранного маркера ореол
+              // r=10, поэтому поднимаем чуть выше.
+              const ly = isSel ? -16 : -11
               return (
                 <g
                   key={loc.id}
@@ -549,9 +587,8 @@ const MapView = forwardRef(function MapView(
                     <MarkerGlyph type={loc.type} />
                     {showLabel && (
                       <text
-                        x={lx}
                         y={ly}
-                        textAnchor={anchor}
+                        textAnchor="middle"
                         className={`marker-label ${loc.major ? 'major' : ''}`}
                       >
                         {loc.name}

@@ -133,7 +133,7 @@ export const REGIONS = {
     name: 'Залив Работорговцев',
     continent: 'essos',
     color: '#cbb694',
-    label: { text: 'ЗАЛИВ\nРАБОТОРГОВЦЕВ', x: 1218, y: 860 },
+    label: { text: 'ЗАЛИВ\nРАБОТОРГОВЦЕВ', x: 1205, y: 888 },
     polygon: null,
   },
   valyria: {

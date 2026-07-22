@@ -286,9 +286,26 @@ body {
   stroke-linecap: round;
 }
 
-.sea-labels,
-.region-labels {
+.continent-labels {
   transition: opacity 0.3s;
+}
+
+.continent-labels text {
+  fill: #55432a;
+  letter-spacing: 0.55em;
+  text-anchor: middle;
+  opacity: 0.16;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+/* Подписи морей и регионов держат постоянный экранный размер:
+   масштабируются той же CSS-переменной, что и маркеры. */
+.sea-labels text,
+.region-labels text {
+  transform: scale(var(--ms, 1));
+  pointer-events: none;
+  text-anchor: middle;
 }
 
 .sea-labels text {
@@ -296,17 +313,54 @@ body {
   font-family: Georgia, serif;
   font-style: italic;
   letter-spacing: 0.35em;
-  text-anchor: middle;
   opacity: 0.75;
-  pointer-events: none;
 }
 
 .region-labels text {
   fill: #55432a;
-  font-size: 14px;
+  font-size: 12.5px;
   letter-spacing: 0.22em;
+  font-variant: small-caps;
+}
+
+.swamps path {
+  stroke: #7d97a8;
+  stroke-width: 1.6;
+  fill: none;
+  opacity: 0.7;
+  stroke-linecap: round;
+}
+
+.waves path {
+  stroke: #8fb0ba;
+  stroke-width: 1.4;
+  fill: none;
+  opacity: 0.55;
+  stroke-linecap: round;
+}
+
+.compass-ring {
+  fill: none;
+  stroke: #6b5636;
+  stroke-width: 1.4;
+  opacity: 0.55;
+}
+
+.compass-major {
+  fill: #6b5636;
+  opacity: 0.6;
+}
+
+.compass-minor {
+  fill: #6b5636;
+  opacity: 0.3;
+}
+
+.compass-n {
+  fill: #55432a;
+  font-size: 15px;
   text-anchor: middle;
-  pointer-events: none;
+  opacity: 0.75;
   font-variant: small-caps;
 }
 
@@ -469,10 +523,22 @@ body {
 
 .card-house {
   margin-top: 10px;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px dashed var(--border);
   font-size: 12.5px;
   line-height: 1.45;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.card-house .sigil {
+  flex: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.card-house-text {
+  min-width: 0;
 }
 
 .house-label {
