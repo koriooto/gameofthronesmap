@@ -1,0 +1,431 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+:root {
+  --ink: #3a2c1a;
+  --ink-soft: #6b5940;
+  --parchment: #f1e7cf;
+  --parchment-dark: #e4d6b6;
+  --accent: #8e2f27;
+  --border: #c9b98f;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--ink);
+  background: #241c14;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ── Сайдбар ─────────────────────────────────────────── */
+
+.sidebar {
+  width: 330px;
+  flex: 0 0 330px;
+  display: flex;
+  flex-direction: column;
+  background: var(--parchment);
+  border-right: 3px double var(--border);
+  padding: 18px 16px 10px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.sidebar-head h1 {
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  font-variant: small-caps;
+}
+
+.subtitle {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.search {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #faf4e4;
+  color: var(--ink);
+  width: 100%;
+}
+
+.search:focus {
+  outline: 2px solid #b09a63;
+}
+
+.type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font: inherit;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #faf4e4;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.chip.on {
+  background: var(--ink);
+  color: var(--parchment);
+  border-color: var(--ink);
+}
+
+.region-select {
+  font: inherit;
+  font-size: 13.5px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #faf4e4;
+  color: var(--ink);
+  width: 100%;
+}
+
+.result-count {
+  font-size: 12px;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.loc-list {
+  list-style: none;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.loc-item {
+  font: inherit;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+}
+
+.loc-item:hover {
+  background: var(--parchment-dark);
+}
+
+.loc-item.sel {
+  background: var(--parchment-dark);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.loc-name {
+  font-size: 14px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loc-region {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.sidebar-foot {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  font-style: italic;
+}
+
+/* ── Карта ───────────────────────────────────────────── */
+
+.map-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: #241c14;
+}
+
+.map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+
+.map-svg:active {
+  cursor: grabbing;
+}
+
+.land {
+  fill: #ece1c4;
+  stroke: #6b5636;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.region-shape {
+  stroke: #6b5636;
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: fill-opacity 0.15s;
+}
+
+.map-frame {
+  fill: none;
+  stroke: #5a4a30;
+  stroke-width: 3;
+}
+
+.forests circle {
+  fill: #7d9464;
+  opacity: 0.3;
+}
+
+.mountains path {
+  fill: none;
+  stroke: #8a7452;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  opacity: 0.75;
+}
+
+.rivers path {
+  fill: none;
+  stroke: #7d97a8;
+  stroke-width: 2;
+  opacity: 0.7;
+  stroke-linecap: round;
+}
+
+.wall {
+  stroke: #eef3f5;
+  stroke-width: 5;
+  stroke-linecap: round;
+  paint-order: stroke;
+  filter: drop-shadow(0 1px 1px #5a4a30);
+}
+
+.sea-labels text {
+  fill: #8d7c57;
+  font-family: Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.35em;
+  text-anchor: middle;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.region-labels text {
+  fill: #55432a;
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  text-anchor: middle;
+  pointer-events: none;
+  font-variant: small-caps;
+}
+
+.marker {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.marker-label {
+  font-size: 11px;
+  fill: #3a2c1a;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: #f1e7cf;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.marker-label.major {
+  font-size: 12.5px;
+  font-weight: bold;
+}
+
+.marker-halo {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  opacity: 0.85;
+}
+
+/* ── Управление и карточка ──────────────────────────── */
+
+.zoom-controls {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoom-controls button {
+  font: inherit;
+  font-size: 17px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--parchment);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.zoom-controls button:hover {
+  background: var(--parchment-dark);
+}
+
+.legend {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  background: color-mix(in srgb, var(--parchment) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.loc-card {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  width: min(380px, calc(100% - 32px));
+  background: var(--parchment);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+}
+
+.card-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font: inherit;
+  font-size: 14px;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.card-title {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.card-title h2 {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.card-en {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+.badge {
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--ink-soft);
+  background: #faf4e4;
+}
+
+.badge.house {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.card-desc {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* ── Мобильная раскладка ────────────────────────────── */
+
+@media (max-width: 760px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex: 0 0 44vh;
+    border-right: none;
+    border-bottom: 3px double var(--border);
+    order: 2;
+  }
+
+  .map-wrap {
+    order: 1;
+    flex: 1;
+  }
+
+  .legend {
+    display: none;
+  }
+}
