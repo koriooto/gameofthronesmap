@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { REGIONS } from '../data/regions.js'
 import { LOCATIONS } from '../data/locations.js'
+import { LABEL_OVERRIDES } from '../data/labelOverrides.js'
 import {
   ESSOS,
   SOTHORYOS,
@@ -24,9 +25,10 @@ import { MarkerGlyph } from '../map/markers.jsx'
 const VB_W = 2000
 const VB_H = 1440
 const MIN_K = 0.85
-const MAX_K = 12
+const MAX_K = 14
 
 const polyPoints = (pts) => pts.map((p) => p.join(',')).join(' ')
+const clampK = (k) => Math.max(MIN_K, Math.min(MAX_K, k))
 
 function ease(t) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
@@ -39,14 +41,34 @@ const MapView = forwardRef(function MapView(
   const svgRef = useRef(null)
   const viewRef = useRef({ x: 0, y: 0, k: 1 })
   const [view, setViewState] = useState(viewRef.current)
+  const [dims, setDims] = useState({ w: 1200, h: 800 })
   const animRef = useRef(null)
+  const rafRef = useRef(null)
+  const pendingRef = useRef(null)
   const dragRef = useRef(null)
+  const pinchRef = useRef(null)
+  const pointersRef = useRef(new Map())
+  const movedRef = useRef(false)
+  const lastTapRef = useRef({ t: 0, x: 0, y: 0 })
+  const initializedRef = useRef(false)
   const [hoverId, setHoverId] = useState(null)
   const [hoverRegion, setHoverRegion] = useState(null)
 
   const setView = useCallback((v) => {
     viewRef.current = v
     setViewState(v)
+  }, [])
+
+  // Троттлинг обновлений через rAF — иначе на телефонах карта дёргается.
+  const scheduleView = useCallback((v) => {
+    viewRef.current = v
+    pendingRef.current = v
+    if (rafRef.current == null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null
+        setViewState(pendingRef.current)
+      })
+    }
   }, [])
 
   const stopAnim = useCallback(() => {
@@ -84,11 +106,19 @@ const MapView = forwardRef(function MapView(
         animateTo({ x: VB_W / 2 - wx * k, y: VB_H / 2 - wy * k, k })
       },
       reset() {
-        animateTo({ x: 0, y: 0, k: 1 })
+        // На узких экранах «весь мир» нечитаем — сбрасываем на Вестерос.
+        const svg = svgRef.current
+        const w = svg ? svg.getBoundingClientRect().width : VB_W
+        if (w < 700) {
+          const k = 1.7
+          animateTo({ x: VB_W / 2 - 380 * k, y: VB_H / 2 - 650 * k, k })
+        } else {
+          animateTo({ x: 0, y: 0, k: 1 })
+        }
       },
       zoomBy(f) {
         const { x, y, k } = viewRef.current
-        const k2 = Math.max(MIN_K, Math.min(MAX_K, k * f))
+        const k2 = clampK(k * f)
         const cx = VB_W / 2
         const cy = VB_H / 2
         animateTo(
@@ -100,6 +130,29 @@ const MapView = forwardRef(function MapView(
     [animateTo],
   )
 
+  // Размер контейнера — от него зависит пиксельная плотность карты.
+  // При первом реальном замере на узких экранах стартуем с Вестероса:
+  // весь мир на телефоне нечитаем.
+  useEffect(() => {
+    const svg = svgRef.current
+    const measure = () => {
+      const r = svg.getBoundingClientRect()
+      if (!r.width || !r.height) return
+      setDims({ w: r.width, h: r.height })
+      if (!initializedRef.current) {
+        initializedRef.current = true
+        if (r.width < 700) {
+          const k = 1.7
+          setView({ x: VB_W / 2 - 380 * k, y: VB_H / 2 - 650 * k, k })
+        }
+      }
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(svg)
+    return () => ro.disconnect()
+  }, [setView])
+
   // Точка курсора в координатах viewBox.
   const clientToBox = useCallback((clientX, clientY) => {
     const svg = svgRef.current
@@ -109,67 +162,144 @@ const MapView = forwardRef(function MapView(
     return { x: pt.x, y: pt.y }
   }, [])
 
+  const zoomAt = useCallback(
+    (p, k2, dur = 300) => {
+      const { x, y, k } = viewRef.current
+      const wx = (p.x - x) / k
+      const wy = (p.y - y) / k
+      const kc = clampK(k2)
+      animateTo({ x: p.x - wx * kc, y: p.y - wy * kc, k: kc }, dur)
+    },
+    [animateTo],
+  )
+
   useEffect(() => {
     const svg = svgRef.current
     const onWheel = (e) => {
       e.preventDefault()
       stopAnim()
       const { x, y, k } = viewRef.current
-      const factor = Math.exp(-e.deltaY * 0.0016)
-      const k2 = Math.max(MIN_K, Math.min(MAX_K, k * factor))
+      const k2 = clampK(k * Math.exp(-e.deltaY * 0.0016))
       if (k2 === k) return
       const p = clientToBox(e.clientX, e.clientY)
       const wx = (p.x - x) / k
       const wy = (p.y - y) / k
-      setView({ x: p.x - wx * k2, y: p.y - wy * k2, k: k2 })
+      scheduleView({ x: p.x - wx * k2, y: p.y - wy * k2, k: k2 })
     }
     svg.addEventListener('wheel', onWheel, { passive: false })
     return () => svg.removeEventListener('wheel', onWheel)
-  }, [clientToBox, setView, stopAnim])
+  }, [clientToBox, scheduleView, stopAnim])
+
+  const startPinch = () => {
+    const pts = [...pointersRef.current.values()]
+    if (pts.length < 2) return
+    const [a, b] = pts
+    pinchRef.current = {
+      dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+      mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      view: { ...viewRef.current },
+    }
+    dragRef.current = null
+  }
 
   const onPointerDown = (e) => {
-    if (e.button !== 0) return
+    if (e.pointerType === 'mouse' && e.button !== 0) return
     stopAnim()
-    e.currentTarget.setPointerCapture(e.pointerId)
+    try {
+      svgRef.current.setPointerCapture(e.pointerId)
+    } catch {
+      // например, синтетические события без активного указателя
+    }
     const p = clientToBox(e.clientX, e.clientY)
-    dragRef.current = { start: p, view: { ...viewRef.current }, moved: false }
+    pointersRef.current.set(e.pointerId, p)
+    if (pointersRef.current.size === 1) {
+      movedRef.current = false
+      dragRef.current = { start: p, view: { ...viewRef.current } }
+    } else if (pointersRef.current.size === 2) {
+      movedRef.current = true
+      startPinch()
+    }
   }
+
   const onPointerMove = (e) => {
+    if (!pointersRef.current.has(e.pointerId)) return
+    const p = clientToBox(e.clientX, e.clientY)
+    pointersRef.current.set(e.pointerId, p)
+
+    if (pinchRef.current && pointersRef.current.size >= 2) {
+      const [a, b] = [...pointersRef.current.values()]
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+      const s = pinchRef.current
+      const k2 = clampK(s.view.k * (dist / s.dist))
+      const wx = (s.mid.x - s.view.x) / s.view.k
+      const wy = (s.mid.y - s.view.y) / s.view.k
+      scheduleView({ x: mid.x - wx * k2, y: mid.y - wy * k2, k: k2 })
+      return
+    }
+
     const d = dragRef.current
     if (!d) return
-    const p = clientToBox(e.clientX, e.clientY)
     const dx = p.x - d.start.x
     const dy = p.y - d.start.y
-    if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
-    if (d.moved) setView({ x: d.view.x + dx, y: d.view.y + dy, k: d.view.k })
+    if (Math.abs(dx) + Math.abs(dy) > 3) movedRef.current = true
+    if (movedRef.current)
+      scheduleView({ x: d.view.x + dx, y: d.view.y + dy, k: d.view.k })
   }
-  const onPointerUp = () => {
-    const d = dragRef.current
+
+  const endPointer = (e) => {
+    if (!pointersRef.current.has(e.pointerId)) return
+    pointersRef.current.delete(e.pointerId)
+
+    if (pinchRef.current) {
+      if (pointersRef.current.size < 2) {
+        pinchRef.current = null
+        if (pointersRef.current.size === 1) {
+          const rest = [...pointersRef.current.values()][0]
+          dragRef.current = { start: rest, view: { ...viewRef.current } }
+        }
+      } else {
+        startPinch()
+      }
+      return
+    }
+
     dragRef.current = null
-    if (d && !d.moved) onSelect(null)
-  }
-  const onDoubleClick = (e) => {
-    const { x, y, k } = viewRef.current
-    const k2 = Math.min(MAX_K, k * 1.8)
+    if (pointersRef.current.size > 0) return
+    if (movedRef.current) return
+
+    // Одиночный тап по фону: снять выделение; двойной тап — приблизить.
     const p = clientToBox(e.clientX, e.clientY)
-    const wx = (p.x - x) / k
-    const wy = (p.y - y) / k
-    animateTo({ x: p.x - wx * k2, y: p.y - wy * k2, k: k2 }, 300)
+    const now = performance.now()
+    const lt = lastTapRef.current
+    if (now - lt.t < 320 && Math.hypot(p.x - lt.x, p.y - lt.y) < 40) {
+      lastTapRef.current = { t: 0, x: 0, y: 0 }
+      zoomAt(p, viewRef.current.k * 1.8)
+    } else {
+      lastTapRef.current = { t: now, x: p.x, y: p.y }
+      onSelect(null)
+    }
   }
 
   const { x, y, k } = view
-  const ms = Math.min(2.0, Math.max(0.45, 2.6 / (k + 0.6))) // масштаб маркеров
-  const showMinorLabels = k >= 2.0
+  // Пикселей экрана на единицу карты — определяет размер маркеров и подписей.
+  // preserveAspectRatio="slice" ⇒ масштаб задаёт бОльшая из сторон.
+  const base = Math.max(dims.w / VB_W, dims.h / VB_H)
+  const ppu = base * k
+  const ms = Math.max(0.45, Math.min(3.6, 1.15 / ppu))
+  const showMajorLabels = ppu >= 0.5
+  const showMinorLabels = ppu >= 1.05
 
   return (
     <svg
       ref={svgRef}
       className="map-svg"
       viewBox={`0 0 ${VB_W} ${VB_H}`}
+      preserveAspectRatio="xMidYMid slice"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onDoubleClick={onDoubleClick}
+      onPointerUp={endPointer}
+      onPointerCancel={endPointer}
       role="img"
       aria-label="Карта известного мира"
     >
@@ -185,11 +315,15 @@ const MapView = forwardRef(function MapView(
           <stop offset="70%" stopColor="#000" stopOpacity="0" />
           <stop offset="100%" stopColor="#3a2c17" stopOpacity="0.28" />
         </radialGradient>
+        <clipPath id="sheet">
+          <rect width={VB_W} height={VB_H} />
+        </clipPath>
       </defs>
 
       <rect width={VB_W} height={VB_H} fill="#cfc3a2" />
 
-      <g transform={`translate(${x} ${y}) scale(${k})`}>
+      <g clipPath="url(#sheet)">
+        <g transform={`translate(${x} ${y}) scale(${k})`}>
         {/* ── суша ── */}
         <g filter="url(#landshadow)">
           <path d={ESSOS} className="land" />
@@ -228,7 +362,7 @@ const MapView = forwardRef(function MapView(
               onMouseEnter={() => setHoverRegion(key)}
               onMouseLeave={() => setHoverRegion(null)}
               onClick={(e) => {
-                if (dragRef.current?.moved) return
+                if (movedRef.current) return
                 e.stopPropagation()
                 onRegionClick(key)
               }}
@@ -300,7 +434,13 @@ const MapView = forwardRef(function MapView(
             const isHover = hoverId === loc.id
             const s = ms * (isSel ? 1.5 : isHover ? 1.25 : 1)
             const showLabel =
-              isSel || isHover || ((loc.major || showMinorLabels) && visible)
+              isSel ||
+              isHover ||
+              (visible && (loc.major ? showMajorLabels : showMinorLabels))
+            const o = LABEL_OVERRIDES[loc.id]
+            const lx = o?.x ?? 0
+            const ly = o?.y ?? 16
+            const anchor = o?.a ?? 'middle'
             return (
               <g
                 key={loc.id}
@@ -310,7 +450,7 @@ const MapView = forwardRef(function MapView(
                 onMouseEnter={() => setHoverId(loc.id)}
                 onMouseLeave={() => setHoverId(null)}
                 onClick={(e) => {
-                  if (dragRef.current?.moved) return
+                  if (movedRef.current) return
                   e.stopPropagation()
                   onSelect(loc.id)
                 }}
@@ -320,7 +460,12 @@ const MapView = forwardRef(function MapView(
                   <circle r="9" fill="transparent" />
                   <MarkerGlyph type={loc.type} />
                   {showLabel && (
-                    <text y="16" className={`marker-label ${loc.major ? 'major' : ''}`}>
+                    <text
+                      x={lx}
+                      y={ly}
+                      textAnchor={anchor}
+                      className={`marker-label ${loc.major ? 'major' : ''}`}
+                    >
                       {loc.name}
                     </text>
                   )}
@@ -329,6 +474,7 @@ const MapView = forwardRef(function MapView(
             )
           })}
         </g>
+      </g>
       </g>
 
       <rect width={VB_W} height={VB_H} fill="url(#vignette)" pointerEvents="none" />

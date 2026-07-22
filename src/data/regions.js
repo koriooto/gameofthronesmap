@@ -23,7 +23,7 @@ export const REGIONS = {
     name: 'Север',
     continent: 'westeros',
     color: '#b7c4c9',
-    label: { text: 'СЕВЕР', x: 330, y: 450 },
+    label: { text: 'СЕВЕР', x: 355, y: 510 },
     polygon: [
       [150, 232], [545, 224],
       [560, 290], [530, 330], [560, 380], [515, 430], [545, 470], [505, 510],

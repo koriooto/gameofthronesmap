@@ -38,6 +38,8 @@ export default function App() {
   const pick = (loc) => {
     setSelectedId(loc.id)
     mapRef.current?.flyTo(loc.x, loc.y)
+    // На телефоне список ниже карты — вернуть карту в поле зрения.
+    if (window.innerWidth <= 760) window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Выбор региона: обновить фильтр и подлететь к его локациям.
