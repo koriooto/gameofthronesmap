@@ -299,11 +299,11 @@ body {
   pointer-events: none;
 }
 
-/* Подписи морей и регионов держат постоянный экранный размер:
-   масштабируются той же CSS-переменной, что и маркеры. */
+/* Подписи морей и регионов: до среднего зума — мировой размер,
+   дальше фиксируются на ~12px экрана и не растут. */
 .sea-labels text,
 .region-labels text {
-  transform: scale(var(--ms, 1));
+  transform: scale(var(--ml, 1));
   pointer-events: none;
   text-anchor: middle;
 }

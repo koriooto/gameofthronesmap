@@ -141,6 +141,8 @@ const MapView = forwardRef(function MapView(
           )
           const ppu = baseOf() * v.k
           svg?.style.setProperty('--ms', String(msOf(ppu)))
+          // Подписи регионов/морей: мировой размер, но не крупнее ~12px экрана
+          svg?.style.setProperty('--ml', String(Math.min(1 / ppu, 1)))
           const lv = levelsOf(ppu)
           const prev = levelsRef.current
           if (
@@ -388,7 +390,7 @@ const MapView = forwardRef(function MapView(
       className="map-svg"
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       preserveAspectRatio="xMidYMid slice"
-      style={{ '--ms': ms }}
+      style={{ '--ms': ms, '--ml': Math.min(1 / ppu, 1) }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPointer}
