@@ -31,6 +31,7 @@ export const LABEL_OVERRIDES = {
   // Королевские земли
   kingslanding: { x: -10, y: 2, a: 'end' },
   duskendale: { x: 9, y: 0, a: 'start' },
+  dragonstone: { x: 10, y: 4, a: 'start' },
   rosby: { x: 9, y: 8, a: 'start' },
   driftmark: { x: 9, y: 6, a: 'start' },
   crackclaw: { x: 9, y: 0, a: 'start' },

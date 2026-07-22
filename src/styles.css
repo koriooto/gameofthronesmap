@@ -79,12 +79,21 @@ body {
   gap: 6px;
 }
 
+.chip svg,
+.legend-item svg,
+.loc-item svg,
+.card-title svg {
+  display: block;
+  flex: none;
+}
+
 .chip {
   font: inherit;
   font-size: 12px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  line-height: 1.2;
   padding: 4px 9px;
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -214,8 +223,8 @@ body {
 }
 
 .land-shadow {
-  fill: #5a4a30;
-  opacity: 0.35;
+  fill: #4f6a72;
+  opacity: 0.4;
   stroke: none;
 }
 
@@ -248,10 +257,20 @@ body {
 
 .rivers path {
   fill: none;
-  stroke: #7d97a8;
+  stroke: #6f9cb2;
   stroke-width: 2;
-  opacity: 0.7;
+  opacity: 0.85;
   stroke-linecap: round;
+}
+
+.lakes ellipse {
+  fill: #a3c2c9;
+  stroke: #6b5636;
+  stroke-width: 1;
+}
+
+.lakes .isle {
+  fill: #ece1c4;
 }
 
 .wall-under {
@@ -273,7 +292,7 @@ body {
 }
 
 .sea-labels text {
-  fill: #8d7c57;
+  fill: #5f7d8a;
   font-family: Georgia, serif;
   font-style: italic;
   letter-spacing: 0.35em;
@@ -335,6 +354,11 @@ body {
   font-size: 17px;
   width: 34px;
   height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--parchment);
@@ -386,6 +410,11 @@ body {
   right: 0;
   width: 42px;
   height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
   font: inherit;
   font-size: 15px;
   background: none;
@@ -436,6 +465,25 @@ body {
 .card-desc {
   font-size: 13.5px;
   line-height: 1.5;
+}
+
+.card-house {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.house-label {
+  color: var(--ink-soft);
+  font-variant: small-caps;
+}
+
+.house-motto {
+  margin-top: 3px;
+  font-style: italic;
+  color: var(--accent);
 }
 
 /* ── Мобильная раскладка ────────────────────────────── */

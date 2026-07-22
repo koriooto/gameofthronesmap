@@ -81,6 +81,7 @@ export default function App() {
       <main className="map-wrap">
         <MapView
           ref={mapRef}
+          filtered={Boolean(query.trim()) || typeFilter.size > 0 || Boolean(regionFilter)}
           visibleIds={visibleIds}
           regionFilter={regionFilter}
           selectedId={selectedId}

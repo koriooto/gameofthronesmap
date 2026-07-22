@@ -14,6 +14,8 @@ import {
   SOTHORYOS,
   ISLANDS,
   RIVERS,
+  LAKES,
+  ISLE_OF_FACES,
   WALL,
   MOUNTAINS,
   FORESTS,
@@ -52,6 +54,7 @@ const WESTEROS_VIEW = { x: VB_W / 2 - 380 * 1.7, y: VB_H / 2 - 650 * 1.7, k: 1.7
 const msOf = (ppu) => Math.max(0.45, Math.min(3.6, 1.15 / ppu))
 const levelsOf = (ppu) => ({
   major: ppu >= 0.5,
+  glyph: ppu >= 1.0,
   minor: ppu >= 1.55,
   fadeWorld: ppu > 2.2,
 })
@@ -80,7 +83,7 @@ function LandShapes() {
 }
 
 const MapView = forwardRef(function MapView(
-  { visibleIds, regionFilter, selectedId, onSelect, onRegionClick, onBackgroundTap },
+  { visibleIds, regionFilter, selectedId, onSelect, onRegionClick, onBackgroundTap, filtered },
   ref,
 ) {
   const svgRef = useRef(null)
@@ -131,6 +134,7 @@ const MapView = forwardRef(function MapView(
           const prev = levelsRef.current
           if (
             lv.major !== prev.major ||
+            lv.glyph !== prev.glyph ||
             lv.minor !== prev.minor ||
             lv.fadeWorld !== prev.fadeWorld
           ) {
@@ -363,8 +367,9 @@ const MapView = forwardRef(function MapView(
   const { x, y, k } = viewRef.current
   const ppu = baseOf() * k
   const ms = msOf(ppu)
-  const { major: showMajorLabels, minor: showMinorLabels, fadeWorld } = levelsOf(ppu)
-  levelsRef.current = { major: showMajorLabels, minor: showMinorLabels, fadeWorld }
+  const lv = levelsOf(ppu)
+  levelsRef.current = lv
+  const { major: showMajorLabels, glyph: showMinorGlyphs, minor: showMinorLabels, fadeWorld } = lv
 
   return (
     <svg
@@ -390,7 +395,7 @@ const MapView = forwardRef(function MapView(
         </clipPath>
       </defs>
 
-      <rect width={VB_W} height={VB_H} fill="#cfc3a2" />
+      <rect width={VB_W} height={VB_H} fill="#b2cbd0" />
 
       <g clipPath="url(#sheet)">
         <g ref={worldRef} transform={`translate(${x} ${y}) scale(${k})`}>
@@ -444,6 +449,18 @@ const MapView = forwardRef(function MapView(
               <path key={i} d={d} />
             ))}
           </g>
+          <g className="lakes">
+            {LAKES.map(([cx, cy, rx, ry], i) => (
+              <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} />
+            ))}
+            <ellipse
+              className="isle"
+              cx={ISLE_OF_FACES[0]}
+              cy={ISLE_OF_FACES[1]}
+              rx={ISLE_OF_FACES[2]}
+              ry={ISLE_OF_FACES[3]}
+            />
+          </g>
           <path d={WALL} className="wall-under" />
           <path d={WALL} className="wall" />
 
@@ -491,6 +508,9 @@ const MapView = forwardRef(function MapView(
               const visible = visibleIds.has(loc.id)
               const isSel = selectedId === loc.id
               const isHover = hoverId === loc.id
+              // На дальних зумах второстепенные значки прячем — иначе
+              // крупные подписи налезают на них. Фильтр/поиск показывает всё.
+              if (!loc.major && !isSel && !showMinorGlyphs && !filtered) return null
               const mult = isSel ? 1.5 : isHover ? 1.25 : 1
               const showLabel =
                 isSel ||
