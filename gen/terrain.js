@@ -193,9 +193,11 @@ for (let sy = 0; sy < H * SS; sy++) {
       // повторяющие берег (как на старых печатных картах)
       const sh = shAt(wx, wy)
       const wv = fbm(wx * 0.02, wy * 0.02, 3)
-      let r = 154 + sh * 52 + wv * 8
-      let g = 178 + sh * 40 + wv * 8
-      let b = 179 + sh * 32 + wv * 6
+      // мелководье чуть светлее глубины, но без белёсого «ореола»,
+      // который у снежных берегов сливался с шапкой суши
+      let r = 152 + sh * 28 + wv * 8
+      let g = 176 + sh * 22 + wv * 8
+      let b = 178 + sh * 18 + wv * 6
       const dline = Math.min(
         Math.abs(sh - 0.52), Math.abs(sh - 0.26), Math.abs(sh - 0.11),
       )
