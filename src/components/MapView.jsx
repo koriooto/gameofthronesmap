@@ -657,7 +657,11 @@ const MapView = forwardRef(function MapView(
 
           {/* ── маршруты героев (режим «Путь героев») ── */}
           {journeys && (
-            <JourneyLayer epIdx={journeys.epIdx} activeIds={journeys.activeIds} />
+            <JourneyLayer
+              epIdx={journeys.epIdx}
+              activeIds={journeys.activeIds}
+              onSelectChar={journeys.onSelectChar}
+            />
           )}
         </g>
       </g>

@@ -58,10 +58,23 @@ body {
   font-style: italic;
 }
 
+.search-wrap {
+  position: relative;
+}
+
+.search-wrap > svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+
 .search {
   font: inherit;
   font-size: 14px;
-  padding: 8px 10px;
+  padding: 8px 10px 8px 32px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: #faf4e4;
@@ -111,12 +124,16 @@ body {
 .region-select {
   font: inherit;
   font-size: 13.5px;
-  padding: 7px 8px;
+  padding: 7px 30px 7px 8px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: #faf4e4;
   color: var(--ink);
   width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #faf4e4
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b5940' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 9px center / 15px;
 }
 
 .result-count {
@@ -688,6 +705,9 @@ body {
   left: 14px;
   font: inherit;
   font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 8px 14px;
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -888,6 +908,64 @@ body {
 
   .journey-toggle {
     top: 10px;
+    left: 10px;
+  }
+}
+
+
+/* карточка героя (клик по фишке на маршруте) */
+.char-card {
+  position: absolute;
+  top: 60px;
+  left: 14px;
+  width: min(330px, calc(100% - 28px));
+  background: var(--parchment);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  z-index: 24;
+}
+
+.char-head {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+}
+
+.char-head svg {
+  flex: none;
+}
+
+.char-head h3 {
+  font-size: 17px;
+}
+
+.char-where {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.char-note {
+  margin-top: 9px;
+  font-size: 13px;
+  line-height: 1.45;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+}
+
+.journey-token {
+  cursor: pointer;
+}
+
+.tl-chip svg {
+  flex: none;
+}
+
+@media (max-width: 760px) {
+  .char-card {
+    top: 54px;
     left: 10px;
   }
 }

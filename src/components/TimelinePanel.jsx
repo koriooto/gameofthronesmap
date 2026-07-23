@@ -5,6 +5,8 @@ import {
   TOTAL_EPISODES,
   epLabel,
 } from '../data/journeys.js'
+import Avatar from './Avatars.jsx'
+import { IconClose, IconPlay, IconPause } from './Icons.jsx'
 
 // Панель «Путь героев»: таймлайн по сериям + выбор персонажей.
 export default function TimelinePanel({
@@ -34,7 +36,7 @@ export default function TimelinePanel({
   return (
     <div className="timeline">
       <button className="tl-close" onClick={onClose} aria-label="Закрыть таймлайн">
-        ✕
+        <IconClose size={14} />
       </button>
       <div className="tl-chars">
         {CHARACTERS.map((ch) => (
@@ -44,7 +46,7 @@ export default function TimelinePanel({
             style={activeIds.has(ch.id) ? { borderColor: ch.color } : undefined}
             onClick={() => toggleChar(ch.id)}
           >
-            <span className="tl-dot" style={{ background: ch.color }} />
+            <Avatar id={ch.id} size={20} ring={ch.color} />
             {ch.name}
           </button>
         ))}
@@ -55,7 +57,7 @@ export default function TimelinePanel({
           onClick={() => setPlaying((p) => !p)}
           aria-label={playing ? 'Пауза' : 'Проиграть'}
         >
-          {playing ? '❚❚' : '▶'}
+          {playing ? <IconPause size={14} /> : <IconPlay size={15} />}
         </button>
         <div className="tl-slider-wrap">
           <input

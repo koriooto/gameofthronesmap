@@ -7,6 +7,8 @@ import { LOCATIONS } from './data/locations.js'
 import { TYPES } from './data/regions.js'
 import { TypeIcon } from './map/markers.jsx'
 import { CHARACTERS } from './data/journeys.js'
+import CharacterCard from './components/CharacterCard.jsx'
+import { IconPlus, IconMinus, IconHome, IconWolf } from './components/Icons.jsx'
 
 export default function App() {
   const [query, setQuery] = useState('')
@@ -20,6 +22,7 @@ export default function App() {
   const [activeChars, setActiveChars] = useState(
     () => new Set(CHARACTERS.slice(0, 4).map((c) => c.id)),
   )
+  const [charCardId, setCharCardId] = useState(null)
 
   const toggleChar = (id) =>
     setActiveChars((prev) => {
@@ -97,7 +100,11 @@ export default function App() {
         <MapView
           ref={mapRef}
           filtered={Boolean(query.trim()) || typeFilter.size > 0 || Boolean(regionFilter)}
-          journeys={journeyMode === 'on' ? { epIdx, activeIds: activeChars } : null}
+          journeys={
+            journeyMode === 'on'
+              ? { epIdx, activeIds: activeChars, onSelectChar: setCharCardId }
+              : null
+          }
           visibleIds={visibleIds}
           regionFilter={regionFilter}
           selectedId={selectedId}
@@ -117,7 +124,7 @@ export default function App() {
             setJourneyMode((m) => (m === 'on' ? 'off' : m === 'off' ? 'warn' : 'off'))
           }
         >
-          🐺 Путь героев
+          <IconWolf size={17} /> Путь героев
         </button>
 
         {journeyMode === 'warn' && (
@@ -138,6 +145,14 @@ export default function App() {
           </div>
         )}
 
+        {journeyMode === 'on' && charCardId && (
+          <CharacterCard
+            charId={charCardId}
+            epIdx={epIdx}
+            onClose={() => setCharCardId(null)}
+          />
+        )}
+
         {journeyMode === 'on' && (
           <TimelinePanel
             epIdx={epIdx}
@@ -149,9 +164,9 @@ export default function App() {
         )}
 
         <div className="zoom-controls">
-          <button onClick={() => mapRef.current?.zoomBy(1.5)} aria-label="Приблизить">＋</button>
-          <button onClick={() => mapRef.current?.zoomBy(1 / 1.5)} aria-label="Отдалить">－</button>
-          <button onClick={() => mapRef.current?.reset()} aria-label="Вся карта">⌂</button>
+          <button onClick={() => mapRef.current?.zoomBy(1.5)} aria-label="Приблизить"><IconPlus /></button>
+          <button onClick={() => mapRef.current?.zoomBy(1 / 1.5)} aria-label="Отдалить"><IconMinus /></button>
+          <button onClick={() => mapRef.current?.reset()} aria-label="Вся карта"><IconHome /></button>
         </div>
 
         {journeyMode !== 'on' && (

@@ -1,5 +1,6 @@
 import { CONTINENTS, REGIONS, TYPES } from '../data/regions.js'
 import { TypeIcon } from '../map/markers.jsx'
+import { IconSearch } from './Icons.jsx'
 
 export default function Sidebar({
   query,
@@ -21,13 +22,16 @@ export default function Sidebar({
         </p>
       </header>
 
-      <input
-        type="search"
-        className="search"
-        placeholder="Поиск: Винтерфелл, Braavos…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      <div className="search-wrap">
+        <IconSearch size={15} />
+        <input
+          type="search"
+          className="search"
+          placeholder="Поиск: Винтерфелл, Braavos…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
 
       <div className="type-chips">
         {Object.entries(TYPES).map(([key, t]) => (

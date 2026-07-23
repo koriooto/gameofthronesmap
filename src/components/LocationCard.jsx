@@ -1,6 +1,7 @@
 import { REGIONS, TYPES, CONTINENTS } from '../data/regions.js'
 import { HOUSES } from '../data/houses.js'
 import { TypeIcon } from '../map/markers.jsx'
+import { IconClose } from './Icons.jsx'
 import Sigil from './Sigil.jsx'
 
 export default function LocationCard({ loc, onClose }) {
@@ -9,7 +10,7 @@ export default function LocationCard({ loc, onClose }) {
   return (
     <div className="loc-card" role="dialog" aria-label={loc.name}>
       <button className="card-close" onClick={onClose} aria-label="Закрыть">
-        ✕
+        <IconClose size={15} />
       </button>
       <div className="card-title">
         <TypeIcon type={loc.type} size={20} />

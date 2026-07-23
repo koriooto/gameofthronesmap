@@ -1,11 +1,12 @@
 import { LOCATIONS } from '../data/locations.js'
 import { CHARACTERS, JOURNEYS, globalEp } from '../data/journeys.js'
+import { AvatarG } from './Avatars.jsx'
 
 const LOC = Object.fromEntries(LOCATIONS.map((l) => [l.id, l]))
 
-// Маршруты героев: линии постоянной экранной толщины + фишка героя
+// Маршруты героев: линии постоянной экранной толщины + фишка-портрет
 // в последней достигнутой точке. Рендерится внутри мировой группы карты.
-export default function JourneyLayer({ epIdx, activeIds }) {
+export default function JourneyLayer({ epIdx, activeIds, onSelectChar }) {
   const tokensAt = {}
   const chars = CHARACTERS.filter((c) => activeIds.has(c.id))
 
@@ -36,7 +37,7 @@ export default function JourneyLayer({ epIdx, activeIds }) {
         const key = `${last[0]},${last[1]}`
         const slot = tokensAt[key] || 0
         tokensAt[key] = slot + 1
-        const off = slot * 13
+        const off = slot * 19
 
         return (
           <g key={ch.id}>
@@ -46,12 +47,16 @@ export default function JourneyLayer({ epIdx, activeIds }) {
               <g
                 className="journey-token"
                 style={{ transform: `scale(var(--ms, 1)) translate(${off}px, 0)` }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectChar?.(ch.id)
+                }}
               >
-                <circle r="8" fill={ch.color} />
-                <circle r="8" className="token-ring" />
-                <text y="3.2" className="token-text">
-                  {ch.short}
-                </text>
+                <circle r="11" fill="#efe4c8" stroke={ch.color} strokeWidth="2.2" />
+                <g transform="translate(-9.5 -9.5) scale(0.594)">
+                  <AvatarG id={ch.id} />
+                </g>
+                <circle r="11" fill="transparent" />
               </g>
             </g>
           </g>
