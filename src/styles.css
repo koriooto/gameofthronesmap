@@ -385,13 +385,10 @@ body {
   pointer-events: none;
 }
 
-/* Подписи морей и регионов: до среднего зума — мировой размер,
-   дальше фиксируются на ~12px экрана и не растут. */
-.sea-labels text,
-.region-labels text {
-  transform: scale(var(--ml, 1));
-  pointer-events: none;
-  text-anchor: middle;
+/* Подписи морей: идут по дуге вдоль берега (textPath), живут в мировых
+   координатах и тают на глубоком зуме — как часть рисунка карты. */
+.sea-labels {
+  transition: opacity 0.3s;
 }
 
 .sea-labels text {
@@ -400,16 +397,23 @@ body {
   font-style: italic;
   letter-spacing: 0.35em;
   opacity: 0.8;
+  text-anchor: middle;
+  pointer-events: none;
 }
 
+/* Подписи королевств: до среднего зума — мировой размер,
+   дальше фиксируются на экранном размере и не растут. */
 .region-labels text {
+  transform: scale(var(--ml, 1));
+  pointer-events: none;
+  text-anchor: middle;
   fill: #4c3c25;
-  font-size: 12.5px;
-  letter-spacing: 0.22em;
+  font-size: 17px;
+  letter-spacing: 0.24em;
   font-variant: small-caps;
   paint-order: stroke;
-  stroke: rgba(240, 235, 215, 0.75);
-  stroke-width: 2.6px;
+  stroke: rgba(240, 235, 215, 0.8);
+  stroke-width: 3px;
 }
 
 .compass-ring {

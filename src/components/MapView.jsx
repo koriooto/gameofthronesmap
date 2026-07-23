@@ -23,7 +23,6 @@ import {
   COMPASS,
   CONTINENT_LABELS,
   SEA_LABELS,
-  FAR_NORTH_LABEL,
   smoothClosed,
 } from '../map/shapes.js'
 import { WESTEROS_COAST_D, REGION_BORDERS_D } from '../map/borders.js'
@@ -546,16 +545,18 @@ const MapView = forwardRef(function MapView(
             ))}
           </g>
 
-          {/* ── подписи морей и регионов: постоянный экранный размер ── */}
-          <g className="sea-labels">
-            {SEA_LABELS.map(([text, lx, ly, rot, size]) => (
-              <g key={text} transform={`translate(${lx} ${ly})${rot ? ` rotate(${rot})` : ''}`}>
-                <text fontSize={size}>{text}</text>
+          {/* ── подписи морей: дугой вдоль берега, тают на глубоком зуме ── */}
+          <g className="sea-labels" style={{ opacity: fadeWorld ? 0 : 1 }}>
+            {SEA_LABELS.map(([text, d, size], i) => (
+              <g key={text}>
+                <path id={`sealbl-${i}`} d={d} fill="none" stroke="none" />
+                <text fontSize={size}>
+                  <textPath href={`#sealbl-${i}`} startOffset="50%">
+                    {text}
+                  </textPath>
+                </text>
               </g>
             ))}
-            <g transform={`translate(${FAR_NORTH_LABEL.x} ${FAR_NORTH_LABEL.y})`}>
-              <text fontSize="20">{FAR_NORTH_LABEL.text}</text>
-            </g>
           </g>
           <g className="region-labels">
             {Object.entries(REGIONS).map(([key, r]) => {
@@ -565,7 +566,7 @@ const MapView = forwardRef(function MapView(
                 <g key={key} transform={`translate(${r.label.x} ${r.label.y})`}>
                   <text style={{ opacity: dimmed ? 0.25 : 0.8 }}>
                     {lines.map((ln, i) => (
-                      <tspan key={i} x="0" dy={i === 0 ? 0 : 15}>
+                      <tspan key={i} x="0" dy={i === 0 ? 0 : 20}>
                         {ln}
                       </tspan>
                     ))}

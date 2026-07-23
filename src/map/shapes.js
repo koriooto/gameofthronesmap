@@ -122,8 +122,8 @@ export const SWAMPS = [
   [915, 890], [935, 905], [920, 918],
 ]
 
-// Стена
-export const WALL = 'M150,232 L545,224'
+// Стена (концы чуть отступают от берега, чтобы штрих не торчал в море)
+export const WALL = 'M158,231.8 L538,224.1'
 
 // Горные цепи: полилиния хребта, ширина и высота.
 // Используются и генератором рельефа (тени), и векторным слоем пиков.
@@ -159,6 +159,48 @@ export const RIDGE_CHAINS = [
 ]
 
 import { LOCATIONS } from '../data/locations.js'
+import { REGIONS } from '../data/regions.js'
+
+// Точка на суше (с отступом от берега)? Используется, чтобы деревья,
+// пики и холмы не вылезали в море за береговую линию.
+function pip(px, py, poly) {
+  let inside = false
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i]
+    const [xj, yj] = poly[j]
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi)
+      inside = !inside
+  }
+  return inside
+}
+const LAND_POLYS = [
+  ESSOS_PTS,
+  SOTHORYOS_PTS,
+  ...Object.values(REGIONS)
+    .filter((r) => r.polygon)
+    .map((r) => r.polygon),
+]
+function inLandAt(px, py) {
+  if (LAND_POLYS.some((p) => pip(px, py, p))) return true
+  return ISLANDS.some(([cx, cy, rx, ry, rot]) => {
+    const a = (-(rot || 0) * Math.PI) / 180
+    const dx = px - cx
+    const dy = py - cy
+    const lx = dx * Math.cos(a) - dy * Math.sin(a)
+    const ly = dx * Math.sin(a) + dy * Math.cos(a)
+    return (lx * lx) / (rx * rx) + (ly * ly) / (ry * ry) <= 1
+  })
+}
+function inLand(px, py, margin = 0) {
+  if (!inLandAt(px, py)) return false
+  if (!margin) return true
+  return (
+    inLandAt(px - margin, py) &&
+    inLandAt(px + margin, py) &&
+    inLandAt(px, py - margin) &&
+    inLandAt(px, py + margin)
+  )
+}
 
 // Чёткие пики вдоль хребтов: детерминированная россыпь по полилинии.
 // Пики, попадающие в «карман» маркера (иконка + подпись над ней), убираются.
@@ -196,7 +238,7 @@ export const PEAKS = RIDGE_CHAINS.flatMap((chain, ci) => {
   }
   return out
 })
-  .filter(([px, py, ps]) => ps > 3.4 && !inMarkerPocket(px, py))
+  .filter(([px, py, ps]) => ps > 3.4 && !inMarkerPocket(px, py) && inLand(px, py, 3))
   .sort((a, b) => a[1] - b[1])
 
 // «Карман» маркера: зона иконки — узкая, зона подписи над иконкой — широкая.
@@ -286,7 +328,7 @@ export const HILLS_D = RIDGE_CHAINS.flatMap((chain, ci) => {
       const off = side * chain.w * (1.25 + j * 0.9)
       const x = +(ax + (bx - ax) * t + nx * off).toFixed(1)
       const y = +(ay + (by - ay) * t + ny * off).toFixed(1)
-      if (inMarkerPocket(x, y)) continue
+      if (inMarkerPocket(x, y) || !inLand(x, y, 2)) continue
       const s = +(2.6 + j * 3).toFixed(1)
       out.push(
         `M${x - s},${y} Q${x},${y - s * 1.15} ${x + s},${y}` +
@@ -318,7 +360,7 @@ export const TREE_D = (() => {
         const key = `${Math.round(x / 5)},${Math.round(y / 5)}`
         if (seen.has(key)) continue
         seen.add(key)
-        if (inMarkerPocket(x, y)) continue
+        if (inMarkerPocket(x, y) || !inLand(x, y, 3)) continue
         const s = 0.75 + j2 * 0.5
         if (cy < 700) {
           // ель: два яруса
@@ -360,19 +402,18 @@ export const CONTINENT_LABELS = [
   ['ЭССОС', 1330, 480, 0, 64],
 ]
 
-// Подписи морей: [текст, x, y, поворот, размер]
+// Подписи морей: [текст, базовая кривая, размер]. Текст идёт по дуге
+// вдоль берега (textPath), как на старых атласных картах.
 export const SEA_LABELS = [
-  ['ЗАКАТНОЕ МОРЕ', 100, 760, -90, 26],
-  ['УЗКОЕ МОРЕ', 655, 660, -78, 22],
-  ['ДРОЖАЩЕЕ МОРЕ', 1080, 255, 0, 26],
-  ['ЛЕТНЕЕ МОРЕ', 880, 1210, 0, 26],
-  ['НЕФРИТОВОЕ МОРЕ', 1555, 1032, 0, 22],
-  ['ЗАЛИВ ЛЕДЯНЫХ УКУСОВ', 85, 318, 0, 12],
-  ['ЗАЛИВ РАЗБИТЫХ КОРАБЛЕЙ', 648, 1024, 0, 10],
-  ['ДЫМНОЕ МОРЕ', 1152, 1082, 0, 12],
-  ['ЗАЛИВ КРАБОВ', 462, 806, 0, 10],
-  ['МОРЕ МИРА', 790, 940, 0, 11],
+  ['ЗАКАТНОЕ МОРЕ', 'M85,950 Q55,755 105,565', 26],
+  ['УЗКОЕ МОРЕ', 'M608,880 Q672,650 630,435', 22],
+  ['ДРОЖАЩЕЕ МОРЕ', 'M840,300 Q1085,200 1330,280', 26],
+  ['ЛЕТНЕЕ МОРЕ', 'M650,1245 Q880,1150 1110,1245', 26],
+  ['НЕФРИТОВОЕ МОРЕ', 'M1370,1085 Q1560,985 1750,1070', 22],
+  ['ЗАЛИВ ЛЕДЯНЫХ УКУСОВ', 'M30,255 Q85,345 180,368', 12],
+  ['ЗАЛИВ РАЗБИТЫХ КОРАБЛЕЙ', 'M575,1000 Q650,1046 730,1004', 10],
+  ['ДЫМНОЕ МОРЕ', 'M1085,1058 Q1150,1105 1220,1063', 12],
+  ['ЗАЛИВ КРАБОВ', 'M405,788 Q462,826 522,792', 10],
+  ['МОРЕ МИРА', 'M735,922 Q790,958 848,925', 11],
+  ['ЗЕМЛИ ВЕЧНОЙ ЗИМЫ', 'M140,78 Q350,8 560,78', 20],
 ]
-
-// Надпись «Земли Вечной Зимы»
-export const FAR_NORTH_LABEL = { text: 'ЗЕМЛИ ВЕЧНОЙ ЗИМЫ', x: 350, y: 30 }
