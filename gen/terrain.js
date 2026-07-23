@@ -10,6 +10,10 @@ import {
   RIDGE_CHAINS,
   smoothClosed,
 } from '/src/map/shapes.js'
+// Единый контур берега Вестероса — тот же путь, которым рисуется
+// чернильная линия в векторном слое: край запечённой суши совпадает
+// с линией пиксель в пиксель.
+import { WESTEROS_COAST_D } from '/src/map/borders.js'
 
 const W = 2000
 const H = 1440
@@ -84,14 +88,20 @@ const islandPaths = ISLANDS.map(([cx, cy, rx, ry, rot]) => {
 
 // код региона (для снега/пустыни): r-канал
 const CODE = { beyond: 40, dorne: 80 }
+const coastPath = new Path2D(WESTEROS_COAST_D)
 mc.fillStyle = 'rgb(20,0,0)'
 mc.fill(essosPath); mc.fill(sothPath)
 for (const p of islandPaths) mc.fill(p)
+// суша Вестероса — строго по единому контуру берега; региональные
+// коды (снег/пустыня) заливаются только внутри него
+mc.fill(coastPath)
+mc.save(); mc.clip(coastPath)
 for (const [key, r] of Object.entries(REGIONS)) {
   if (!r.polygon) continue
   mc.fillStyle = `rgb(${CODE[key] || 20},0,0)`
   mc.fill(regionPath(r))
 }
+mc.restore()
 // Красная пустошь как пустынная зона Эссоса
 mc.save(); mc.clip(essosPath)
 mc.fillStyle = 'rgb(80,0,0)'
@@ -115,11 +125,16 @@ bc.fill(essosPath)
 bc.fillStyle = '#ccd2a2'
 bc.fill(sothPath)
 for (const p of islandPaths) { bc.fillStyle = '#dad5b2'; bc.fill(p) }
+// нейтральная бумага по единому контуру берега, регионы — внутри него
+bc.fillStyle = '#ded8c0'
+bc.fill(coastPath)
+bc.save(); bc.clip(coastPath)
 for (const [key, r] of Object.entries(REGIONS)) {
   if (!r.polygon) continue
   bc.fillStyle = WCOLORS[key] || '#b3bfa0'
   bc.fill(regionPath(r))
 }
+bc.restore()
 // зоны Эссоса поверх, мягкими пятнами
 bc.save(); bc.clip(essosPath)
 const blob = (x, y, rx, ry, color) => {
