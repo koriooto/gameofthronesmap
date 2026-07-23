@@ -15,9 +15,10 @@ import {
   RIVERS,
   LAKES,
   ISLE_OF_FACES,
-  FORESTS,
   SWAMPS,
   PEAKS,
+  HILLS_D,
+  TREE_D,
   WALL,
   COMPASS,
   CONTINENT_LABELS,
@@ -72,33 +73,38 @@ const levelsOf = (ppu) => ({
   fadeWorld: ppu > 2.2,
 })
 
-// Векторный пик: светлая и теневая грань, контур, снежная шапка
+// Гравюрный пик: вогнутые склоны, сдвинутая вершина, светлая и теневая
+// грань, штриховка на теневом склоне — как на рисованных атласных картах.
 function Peak({ x, y, s }) {
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
+  const j = n - Math.floor(n)
+  const sk = (j - 0.5) * 0.36 * s // асимметрия вершины
+  const fx = sk * 0.35 // основание теневой складки
+  const left = `M${-s},${s * 0.6} Q${-s * 0.45 + sk * 0.3},${-s * 0.06} ${sk},${-s}`
+  const right = `Q${s * 0.5 + sk * 0.3},${-s * 0.06} ${s},${s * 0.6}`
   return (
     <g transform={`translate(${x} ${y})`}>
-      <path
-        d={`M${-s},${s * 0.6} L0,${-s} L${s},${s * 0.6} Z`}
-        className="peak-light"
-      />
-      <path
-        d={`M0,${-s} L${s},${s * 0.6} L${s * 0.45},${s * 0.6} L0,${-s * 0.35} Z`}
-        className="peak-dark"
-      />
-      <path
-        d={`M${-s},${s * 0.6} L0,${-s} L${s},${s * 0.6}`}
-        className="peak-line"
-      />
+      <path d={`${left} L${fx},${s * 0.6} Z`} className="peak-light" />
+      <path d={`M${sk},${-s} ${right} L${fx},${s * 0.6} Z`} className="peak-dark" />
+      <path d={`${left} ${right}`} className="peak-line" />
+      {s > 6 && (
+        <path
+          d={
+            `M${sk + s * 0.3},${-s * 0.18} L${sk + s * 0.52},${s * 0.24}` +
+            `M${fx + s * 0.14},${s * 0.12} L${fx + s * 0.34},${s * 0.5}`
+          }
+          className="peak-hatch"
+        />
+      )}
       {s > 11 && (
         <path
-          d={`M${-s * 0.2},${-s * 0.52} L0,${-s} L${s * 0.2},${-s * 0.52} L0,${-s * 0.3} Z`}
+          d={`M${sk - s * 0.2},${-s * 0.5} L${sk},${-s} L${sk + s * 0.2},${-s * 0.5} Q${sk},${-s * 0.32} ${sk - s * 0.2},${-s * 0.5} Z`}
           className="peak-snow"
         />
       )}
     </g>
   )
 }
-
-const treePattern = (cy) => (cy < 700 ? 'pat-conif' : cy > 1150 ? 'pat-trop' : 'pat-decid')
 
 const MapView = forwardRef(function MapView(
   {
@@ -422,17 +428,6 @@ const MapView = forwardRef(function MapView(
         <clipPath id="sheet">
           <rect width={VB_W} height={VB_H} />
         </clipPath>
-        <pattern id="pat-conif" width="13" height="15" patternUnits="userSpaceOnUse" patternTransform="rotate(5)">
-          <path d="M6,12 L6,10 M6,10 L3.2,10.8 L6,4.5 L8.8,10.8 Z M6,7.6 L3.8,8.4 L6,3.6 L8.2,8.4 Z" className="tree-conif" />
-        </pattern>
-        <pattern id="pat-decid" width="14" height="13" patternUnits="userSpaceOnUse" patternTransform="rotate(-7)">
-          <circle cx="7" cy="6" r="3.1" className="tree-decid" />
-          <path d="M7,9.4 L7,11.4" className="tree-trunk" />
-        </pattern>
-        <pattern id="pat-trop" width="15" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(3)">
-          <ellipse cx="7.5" cy="6.5" rx="3.6" ry="2.6" className="tree-trop" />
-          <path d="M7.5,9.4 L7.5,11.6" className="tree-trunk" />
-        </pattern>
       </defs>
 
       <rect width={VB_W} height={VB_H} fill="#9db8bf" />
@@ -490,12 +485,10 @@ const MapView = forwardRef(function MapView(
             />
           </g>
           <g className="forest-blobs">
-            {FORESTS.map(([cx, cy, r], i) => (
-              <g key={i}>
-                <circle cx={cx} cy={cy} r={r} className="forest-base" />
-                <circle cx={cx} cy={cy} r={r} fill={`url(#${treePattern(cy)})`} />
-              </g>
-            ))}
+            <path d={TREE_D.trunk} className="tree-trunk" />
+            <path d={TREE_D.decid} className="tree-decid" />
+            <path d={TREE_D.trop} className="tree-trop" />
+            <path d={TREE_D.conif} className="tree-conif" />
           </g>
           <g className="swamps">
             {SWAMPS.map(([sx, sy], i) => (
@@ -503,6 +496,7 @@ const MapView = forwardRef(function MapView(
             ))}
           </g>
           <g className="peaks">
+            <path d={HILLS_D} className="hill-line" />
             {PEAKS.map(([px2, py2, ps], i) => (
               <Peak key={i} x={px2} y={py2} s={ps} />
             ))}
@@ -519,7 +513,7 @@ const MapView = forwardRef(function MapView(
                 d={REGION_PATHS[key]}
                 fill={r.color}
                 className="region-shape"
-                style={{ fillOpacity: active ? 0.42 : dimmed ? 0.04 : 0.12 }}
+                style={{ fillOpacity: active ? 0.42 : dimmed ? 0.03 : 0.05 }}
                 onMouseEnter={() => setHoverRegion(key)}
                 onMouseLeave={() => setHoverRegion(null)}
                 onClick={(e) => {

@@ -168,7 +168,7 @@ const phash = (a, b) => {
 }
 export const PEAKS = RIDGE_CHAINS.flatMap((chain, ci) => {
   const out = []
-  const step = Math.max(13, chain.w * 0.6)
+  const step = Math.max(9, chain.w * 0.4)
   for (let i = 0; i < chain.pts.length - 1; i++) {
     const [ax, ay] = chain.pts[i]
     const [bx, by] = chain.pts[i + 1]
@@ -178,36 +178,38 @@ export const PEAKS = RIDGE_CHAINS.flatMap((chain, ci) => {
     for (let d = 0; d <= len; d += step) {
       const t = d / len
       const j = phash(ci * 31 + i * 7, d)
-      const off = (j - 0.5) * chain.w * 0.8
+      const off = (j - 0.5) * chain.w * 0.9
       const x = ax + (bx - ax) * t + nx * off
       const y = ay + (by - ay) * t + ny * off
-      const s = Math.min(15, (chain.w * 0.42 + j * chain.w * 0.22) * (0.55 + chain.h * 0.5))
+      const s = Math.min(15, (chain.w * 0.46 + j * chain.w * 0.24) * (0.55 + chain.h * 0.5))
       out.push([+x.toFixed(1), +y.toFixed(1), +s.toFixed(1)])
       // малый пик-спутник
-      if (j > 0.45) {
+      if (j > 0.4) {
         const j2 = phash(d, ci * 13 + i)
         out.push([
-          +(x + (j2 - 0.5) * chain.w * 1.1).toFixed(1),
-          +(y + (phash(d + 1, ci) - 0.5) * chain.w * 0.9).toFixed(1),
-          +(s * 0.55).toFixed(1),
+          +(x + (j2 - 0.5) * chain.w * 1.4).toFixed(1),
+          +(y + (phash(d + 1, ci) - 0.5) * chain.w * 1.1).toFixed(1),
+          +(s * 0.6).toFixed(1),
         ])
       }
     }
   }
   return out
 })
-  .filter(([px, py]) =>
-    !LOCATIONS.some((l) => {
-      const dx = Math.abs(px - l.x)
-      const dy = py - l.y
-      // зона иконки — узкая, зона подписи над иконкой — широкая
-      return (
-        (dx < 28 && dy > -16 && dy < 12) ||
-        (dx < (l.major ? 62 : 34) && dy >= -38 && dy <= -10)
-      )
-    }),
-  )
+  .filter(([px, py, ps]) => ps > 3.4 && !inMarkerPocket(px, py))
   .sort((a, b) => a[1] - b[1])
+
+// «Карман» маркера: зона иконки — узкая, зона подписи над иконкой — широкая.
+function inMarkerPocket(px, py) {
+  return LOCATIONS.some((l) => {
+    const dx = Math.abs(px - l.x)
+    const dy = py - l.y
+    return (
+      (dx < 20 && dy > -14 && dy < 10) ||
+      (dx < (l.major ? 52 : 28) && dy >= -32 && dy <= -8)
+    )
+  })
+}
 
 // Горы: [x, y] вершин
 export const MOUNTAINS = [
@@ -265,6 +267,89 @@ export const WAVES = [
   [300, 1200], [90, 500], [80, 980], [1800, 700], [1350, 1080],
   [200, 180], [1900, 1200],
 ]
+
+// Холмы-предгорья: дуги-«бугорки» по обе стороны хребтов, как на
+// гравюрных картах. Один общий path — дёшево для DOM.
+export const HILLS_D = RIDGE_CHAINS.flatMap((chain, ci) => {
+  const out = []
+  for (let i = 0; i < chain.pts.length - 1; i++) {
+    const [ax, ay] = chain.pts[i]
+    const [bx, by] = chain.pts[i + 1]
+    const len = Math.hypot(bx - ax, by - ay)
+    const nx = -(by - ay) / len
+    const ny = (bx - ax) / len
+    for (let d = 0; d <= len; d += 24) {
+      const t = d / len
+      const j = phash(ci * 17 + i * 3, d + 5)
+      if (j < 0.35) continue
+      const side = j > 0.67 ? 1 : -1
+      const off = side * chain.w * (1.25 + j * 0.9)
+      const x = +(ax + (bx - ax) * t + nx * off).toFixed(1)
+      const y = +(ay + (by - ay) * t + ny * off).toFixed(1)
+      if (inMarkerPocket(x, y)) continue
+      const s = +(2.6 + j * 3).toFixed(1)
+      out.push(
+        `M${x - s},${y} Q${x},${y - s * 1.15} ${x + s},${y}` +
+          `M${+(x + s * 0.22).toFixed(1)},${+(y - s * 0.48).toFixed(1)} Q${+(x + s * 0.5).toFixed(1)},${+(y - s * 0.2).toFixed(1)} ${+(x + s * 0.62).toFixed(1)},${y}`,
+      )
+    }
+  }
+  return out
+}).join('')
+
+// Леса из отдельных «нарисованных» деревьев (вместо паттерна): по типу —
+// хвойные (север), лиственные, тропические. Все деревья одного типа
+// склеены в один path; стволы — отдельным штриховым path.
+export const TREE_D = (() => {
+  const conif = []
+  const decid = []
+  const trop = []
+  const trunk = []
+  const seen = new Set()
+  const f = (n) => +n.toFixed(1)
+  for (const [cx, cy, r] of FORESTS) {
+    for (let gy = cy - r; gy <= cy + r; gy += 8) {
+      for (let gx = cx - r; gx <= cx + r; gx += 8) {
+        const j1 = phash(gx * 0.73, gy * 1.31)
+        const j2 = phash(gy * 0.91, gx * 0.57)
+        const x = f(gx + (j1 - 0.5) * 6)
+        const y = f(gy + (j2 - 0.5) * 6)
+        if (Math.hypot(x - cx, y - cy) > r * (0.8 + 0.28 * j1) - 1.5) continue
+        const key = `${Math.round(x / 5)},${Math.round(y / 5)}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        if (inMarkerPocket(x, y)) continue
+        const s = 0.75 + j2 * 0.5
+        if (cy < 700) {
+          // ель: два яруса
+          conif.push(
+            `M${f(x - 2.1 * s)},${f(y + 1.5 * s)} L${x},${f(y - 4 * s)} L${f(x + 2.1 * s)},${f(y + 1.5 * s)} Z` +
+              `M${f(x - 1.5 * s)},${f(y - 0.7 * s)} L${x},${f(y - 4.6 * s)} L${f(x + 1.5 * s)},${f(y - 0.7 * s)} Z`,
+          )
+          trunk.push(`M${x},${f(y + 1.5 * s)} L${x},${f(y + 2.9 * s)}`)
+        } else if (cy > 1150) {
+          // тропическая крона — широкий «зонт»
+          trop.push(
+            `M${f(x - 2.5 * s)},${y} a${f(2.5 * s)},${f(1.7 * s)} 0 1,0 ${f(5 * s)},0 a${f(2.5 * s)},${f(1.7 * s)} 0 1,0 ${f(-5 * s)},0`,
+          )
+          trunk.push(`M${x},${f(y + 1.6 * s)} L${x},${f(y + 3.4 * s)}`)
+        } else {
+          // лиственное «облачко»
+          decid.push(
+            `M${f(x - 2 * s)},${y} a${f(2 * s)},${f(1.9 * s)} 0 1,0 ${f(4 * s)},0 a${f(2 * s)},${f(1.9 * s)} 0 1,0 ${f(-4 * s)},0`,
+          )
+          trunk.push(`M${x},${f(y + 1.8 * s)} L${x},${f(y + 3.3 * s)}`)
+        }
+      }
+    }
+  }
+  return {
+    conif: conif.join(''),
+    decid: decid.join(''),
+    trop: trop.join(''),
+    trunk: trunk.join(''),
+  }
+})()
 
 // Роза ветров: центр и радиус (рисуется в MapView)
 export const COMPASS = { x: 130, y: 1290, r: 52 }

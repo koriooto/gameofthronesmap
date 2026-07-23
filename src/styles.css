@@ -243,56 +243,54 @@ body {
 
 .rivers-halo path {
   fill: none;
-  stroke: rgba(214, 232, 236, 0.55);
-  stroke-width: 3.6;
+  stroke: rgba(238, 240, 228, 0.6);
+  stroke-width: 3.4;
   stroke-linecap: round;
 }
 
 .rivers path {
   fill: none;
-  stroke: #55869e;
-  stroke-width: 1.7;
+  stroke: #5b8296;
+  stroke-width: 1.5;
   stroke-linecap: round;
 }
 
 .lakes ellipse {
-  fill: #7fabbc;
-  stroke: #4f7f97;
-  stroke-width: 1.1;
+  fill: #aac4c2;
+  stroke: #54422a;
+  stroke-width: 0.9;
 }
 
 .lakes .isle {
-  fill: #a9bb8a;
+  fill: #c3cc9e;
   stroke: #54422a;
   stroke-width: 0.8;
 }
 
-.forest-base {
-  fill: rgba(72, 100, 62, 0.22);
-}
-
 .tree-conif {
-  fill: #4d6a46;
-  stroke: #3a5236;
-  stroke-width: 0.5;
+  fill: #5b7845;
+  stroke: #42593a;
+  stroke-width: 0.45;
+  stroke-linejoin: round;
 }
 
 .tree-decid {
-  fill: #5d7f4a;
-  stroke: #48633a;
-  stroke-width: 0.6;
+  fill: #78915a;
+  stroke: #55693f;
+  stroke-width: 0.5;
 }
 
 .tree-trop {
-  fill: #46734a;
-  stroke: #375c3b;
-  stroke-width: 0.6;
+  fill: #5d8153;
+  stroke: #446140;
+  stroke-width: 0.5;
 }
 
 .tree-trunk {
-  stroke: #4a3c28;
-  stroke-width: 0.9;
+  stroke: #5c4a34;
+  stroke-width: 0.7;
   fill: none;
+  stroke-linecap: round;
 }
 
 .swamps path {
@@ -304,22 +302,39 @@ body {
 }
 
 .peak-light {
-  fill: #b39d78;
+  fill: #e9dfc2;
 }
 
 .peak-dark {
-  fill: #7c664a;
+  fill: #a68c66;
 }
 
 .peak-line {
   fill: none;
-  stroke: #57452f;
-  stroke-width: 1;
+  stroke: #6b573c;
+  stroke-width: 0.9;
   stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.peak-hatch {
+  fill: none;
+  stroke: #6b573c;
+  stroke-width: 0.5;
+  opacity: 0.6;
+  stroke-linecap: round;
 }
 
 .peak-snow {
-  fill: #f6f4ec;
+  fill: #f8f7f1;
+}
+
+.hill-line {
+  fill: none;
+  stroke: #8a7454;
+  stroke-width: 0.8;
+  opacity: 0.75;
+  stroke-linecap: round;
 }
 
 .region-shape {

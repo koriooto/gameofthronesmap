@@ -103,16 +103,18 @@ const idData = mc.getImageData(0, 0, W, H).data
 const bioCv = document.createElement('canvas')
 bioCv.width = W; bioCv.height = H
 const bc = bioCv.getContext('2d', { willReadFrequently: true })
+// Пергаментная палитра в духе старых печатных атласов: бумага + лёгкие
+// региональные оттенки, вся «графика» рельефа — векторным слоем сверху.
 const WCOLORS = {
-  beyond: '#e6ebee', north: '#b5c2b1', vale: '#adc0b4', ironislands: '#a9b4a3',
-  riverlands: '#a8c48d', westerlands: '#c8b489', crownlands: '#b4bd90',
-  stormlands: '#96b183', reach: '#a9c77f', dorne: '#ddc48d',
+  beyond: '#eceee6', north: '#ded8c2', vale: '#dcd8c0', ironislands: '#d8d3bc',
+  riverlands: '#dcd9b2', westerlands: '#ddd2ae', crownlands: '#ded8b0',
+  stormlands: '#d5d4ae', reach: '#dcdaa8', dorne: '#e7d5a2',
 }
-bc.fillStyle = '#b3bfa0'
+bc.fillStyle = '#dcd6b2'
 bc.fill(essosPath)
-bc.fillStyle = '#8fae72'
+bc.fillStyle = '#ccd2a2'
 bc.fill(sothPath)
-for (const p of islandPaths) { bc.fillStyle = '#b3bda0'; bc.fill(p) }
+for (const p of islandPaths) { bc.fillStyle = '#dad5b2'; bc.fill(p) }
 for (const [key, r] of Object.entries(REGIONS)) {
   if (!r.polygon) continue
   bc.fillStyle = WCOLORS[key] || '#b3bfa0'
@@ -126,13 +128,13 @@ const blob = (x, y, rx, ry, color) => {
   bc.fillStyle = g
   bc.beginPath(); bc.ellipse(x, y, rx * 1.4, ry * 1.4, 0, 0, 7); bc.fill()
 }
-blob(820, 700, 260, 320, '#9dbb85')   // Вольные города
-blob(1250, 580, 330, 260, '#c3c491')  // Дотракийское море
-blob(1420, 870, 190, 120, '#dcc189')  // Красная пустошь
-blob(1650, 930, 220, 140, '#a3bd85')  // Йи Ти
-blob(1840, 1040, 130, 130, '#9a9a90') // Тенистые земли
-blob(1250, 350, 420, 120, '#b9c2a8')  // северные степи
-blob(1050, 640, 130, 110, '#7fa06b')  // лес Квохора
+blob(820, 700, 260, 320, '#d5d6ab')   // Вольные города
+blob(1250, 580, 330, 260, '#e0d9a8')  // Дотракийское море
+blob(1420, 870, 190, 120, '#e8d3a0')  // Красная пустошь
+blob(1650, 930, 220, 140, '#d3d7a6')  // Йи Ти
+blob(1840, 1040, 130, 130, '#c9c6b4') // Тенистые земли
+blob(1250, 350, 420, 120, '#dcd8ba')  // северные степи
+blob(1050, 640, 130, 110, '#c4cf9c')  // лес Квохора
 bc.restore()
 // размытие для мягких переходов
 const bio2 = document.createElement('canvas')
@@ -146,9 +148,20 @@ const bioData = b2.getImageData(0, 0, W, H).data
 const shal = document.createElement('canvas')
 shal.width = W; shal.height = H
 const sc = shal.getContext('2d', { willReadFrequently: true })
-sc.filter = 'blur(14px)'
+sc.filter = 'blur(16px)'
 sc.drawImage(maskCv, 0, 0)
 const shalData = sc.getImageData(0, 0, W, H).data
+
+// билинейная выборка размытой маски суши — для гладких контурных
+// линий отмелей (иначе кольца получаются ступенчатыми)
+const shAt = (x, y) => {
+  const xi = Math.max(0, Math.min(W - 2, Math.floor(x)))
+  const yi = Math.max(0, Math.min(H - 2, Math.floor(y)))
+  const xf = x - xi, yf = y - yi
+  const i = (yi * W + xi) * 4
+  const a = shalData[i], b = shalData[i + 4], c = shalData[i + W * 4], d = shalData[i + W * 4 + 4]
+  return (a + (b - a) * xf + (c - a) * yf + (a - b - c + d) * xf * yf) / 255
+}
 
 // ── итоговый рендер ──
 console.time('render')
@@ -176,12 +189,18 @@ for (let sy = 0; sy < H * SS; sy++) {
     const mi = (Math.min(H - 1, Math.round(wy)) * W + Math.min(W - 1, Math.round(wx))) * 4
     const land = idData[mi] > 0
     if (!land) {
-      // море: глубина + мелководье + лёгкая рябь
-      const sh = shalData[mi] / 255
+      // море: приглушённый пергаментный тон + контурные линии отмелей,
+      // повторяющие берег (как на старых печатных картах)
+      const sh = shAt(wx, wy)
       const wv = fbm(wx * 0.02, wy * 0.02, 3)
-      let r = 132 + sh * 68 + wv * 10
-      let g = 168 + sh * 52 + wv * 10
-      let b = 176 + sh * 42 + wv * 8
+      let r = 154 + sh * 52 + wv * 8
+      let g = 178 + sh * 40 + wv * 8
+      let b = 179 + sh * 32 + wv * 6
+      const dline = Math.min(
+        Math.abs(sh - 0.52), Math.abs(sh - 0.26), Math.abs(sh - 0.11),
+      )
+      const line = Math.max(0, 1 - dline / 0.016)
+      r -= line * 24; g -= line * 20; b -= line * 14
       px[o] = r; px[o + 1] = g; px[o + 2] = b; px[o + 3] = 255
       continue
     }
@@ -191,32 +210,28 @@ for (let sy = 0; sy < H * SS; sy++) {
     const e = 1.2
     const gx = (hAt(wx + e, wy) - hAt(wx - e, wy)) / (2 * e)
     const gy = (hAt(wx, wy + e) - hAt(wx, wy - e)) / (2 * e)
-    let shade = 0.86 + (gx * LX + gy * LY) * 9
-    shade = Math.max(0.55, Math.min(1.22, shade))
+    // затенение едва заметное: основную графику гор даёт векторный слой
+    let shade = 0.965 + (gx * LX + gy * LY) * 3
+    shade = Math.max(0.86, Math.min(1.06, shade))
     // базовый цвет биома
     let r = bioData[mi], g = bioData[mi + 1], b = bioData[mi + 2]
     // пустыни: дюнная штриховка
     if (code === 80) {
       const dune = Math.sin((wx + wy * 0.35) * 0.55 + fbm(wx * 0.02, wy * 0.02, 2) * 6) * 0.5 + 0.5
-      r += dune * 14 - 4; g += dune * 10 - 4; b += dune * 6 - 4
+      r += dune * 12 - 4; g += dune * 9 - 4; b += dune * 5 - 4
     }
-    // скалы и снежные шапки
-    const lat = wy / H
-    if (h > 0.52) {
-      const t = Math.min(1, (h - 0.52) / 0.3)
-      r = r + (150 - r) * t; g = g + (132 - g) * t; b = b + (108 - b) * t
-    }
-    if (h > 0.88 || (code === 40 && h > 0.34)) {
-      const t = Math.min(1, (h - (code === 40 ? 0.34 : 0.88)) / 0.2)
-      r = r + (246 - r) * t; g = g + (247 - g) * t; b = b + (244 - b) * t
+    // предгорья: едва заметное тёплое тонирование бумаги под хребтами
+    if (h > 0.55) {
+      const t = Math.min(1, (h - 0.55) / 0.4)
+      r = r + (208 - r) * t * 0.35; g = g + (190 - g) * t * 0.35; b = b + (158 - b) * t * 0.35
     }
     // снежность крайнего севера
     if (code === 40) {
       const t = Math.max(0, 1 - wy / 240)
-      r = r + (240 - r) * t * 0.8; g = g + (242 - g) * t * 0.8; b = b + (244 - b) * t * 0.8
+      r = r + (242 - r) * t * 0.8; g = g + (244 - g) * t * 0.8; b = b + (244 - b) * t * 0.8
     }
-    // зерно; на скалах — грубее (осыпи и складки)
-    const gAmp = 18 + Math.min(1.2, h) * 26
+    // зерно бумаги — мелкое и сдержанное
+    const gAmp = 10 + Math.min(1.2, h) * 10
     const grain = fbm(wx * 0.11, wy * 0.11, 3) * gAmp - gAmp / 2
     r = (r + grain) * shade; g = (g + grain) * shade; b = (b + grain) * shade
     px[o] = Math.max(0, Math.min(255, r))
