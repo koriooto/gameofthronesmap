@@ -671,6 +671,7 @@ body {
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .journey-path {
@@ -679,6 +680,7 @@ body {
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .journey-token {
