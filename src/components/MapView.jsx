@@ -26,6 +26,7 @@ import {
   FAR_NORTH_LABEL,
   smoothClosed,
 } from '../map/shapes.js'
+import { WESTEROS_COAST_D, REGION_BORDERS_D } from '../map/borders.js'
 import { MarkerGlyph } from '../map/markers.jsx'
 import { LABEL_NUDGES } from '../data/labelNudges.js'
 import JourneyLayer from './JourneyLayer.jsx'
@@ -448,9 +449,7 @@ const MapView = forwardRef(function MapView(
           <g className="coastlines">
             <path d={ESSOS} />
             <path d={SOTHORYOS} />
-            {Object.entries(REGIONS).map(
-              ([key, r]) => r.polygon && <path key={key} d={REGION_PATHS[key]} />,
-            )}
+            <path d={WESTEROS_COAST_D} />
             {ISLANDS.map(([cx, cy, rx, ry, rot], i) => (
               <ellipse
                 key={i}
@@ -462,6 +461,7 @@ const MapView = forwardRef(function MapView(
               />
             ))}
           </g>
+          <path d={REGION_BORDERS_D} className="region-borders" />
           <g className="rivers-halo">
             {RIVERS.map((d, i) => (
               <path key={i} d={d} />

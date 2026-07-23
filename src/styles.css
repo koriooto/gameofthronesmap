@@ -241,6 +241,16 @@ body {
   opacity: 0.85;
 }
 
+/* внутренние границы регионов: тонкий пунктир, каждая линия — один раз */
+.region-borders {
+  fill: none;
+  stroke: #6b573c;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
 .rivers-halo path {
   fill: none;
   stroke: rgba(238, 240, 228, 0.6);
