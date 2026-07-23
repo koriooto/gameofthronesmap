@@ -644,3 +644,250 @@ body {
     z-index: 30;
   }
 }
+
+/* ── Путь героев: маршруты и таймлайн ───────────────── */
+
+.journey-halo {
+  fill: none;
+  stroke: rgba(244, 238, 220, 0.85);
+  stroke-width: 5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.journey-path {
+  fill: none;
+  stroke-width: 2.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.journey-token {
+  transition: transform 0.2s;
+}
+
+.token-ring {
+  fill: none;
+  stroke: #f4ecd8;
+  stroke-width: 1.8;
+}
+
+.token-text {
+  fill: #f4ecd8;
+  font-size: 8.5px;
+  font-weight: bold;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.journey-toggle {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  font: inherit;
+  font-size: 13.5px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--parchment);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.journey-toggle.on {
+  background: var(--ink);
+  color: var(--parchment);
+  border-color: var(--ink);
+}
+
+.journey-warn {
+  position: absolute;
+  top: 60px;
+  left: 14px;
+  width: min(340px, calc(100% - 28px));
+  background: var(--parchment);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  z-index: 25;
+}
+
+.journey-warn b {
+  color: var(--accent);
+}
+
+.journey-warn p {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 8px 0 10px;
+}
+
+.jw-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.jw-ok,
+.jw-no {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.jw-ok {
+  background: var(--accent);
+  color: var(--parchment);
+  border: 1px solid var(--accent);
+}
+
+.jw-no {
+  background: #faf4e4;
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.timeline {
+  position: absolute;
+  left: 14px;
+  right: 60px;
+  bottom: 14px;
+  background: color-mix(in srgb, var(--parchment) 94%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 40px 10px 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+
+.tl-close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 13px;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.tl-chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.tl-chip {
+  font: inherit;
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: #faf4e4;
+  color: var(--ink-soft);
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.tl-chip.on {
+  opacity: 1;
+  color: var(--ink);
+}
+
+.tl-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tl-play {
+  font: inherit;
+  font-size: 13px;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #faf4e4;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tl-slider-wrap {
+  flex: 1;
+  position: relative;
+  padding-bottom: 14px;
+}
+
+.tl-slider {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.tl-seasons {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  pointer-events: none;
+}
+
+.tl-season-mark {
+  position: absolute;
+  font-size: 9.5px;
+  color: var(--ink-soft);
+  transform: translateX(2px);
+}
+
+.tl-label {
+  flex: none;
+  font-size: 12.5px;
+  min-width: 118px;
+  text-align: right;
+  font-variant: small-caps;
+}
+
+@media (max-width: 760px) {
+  .timeline {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    padding: 8px 36px 8px 10px;
+  }
+
+  .tl-label {
+    min-width: 96px;
+    font-size: 11px;
+  }
+
+  .journey-toggle {
+    top: 10px;
+    left: 10px;
+  }
+}

@@ -1,10 +1,12 @@
 import { useMemo, useRef, useState } from 'react'
 import MapView from './components/MapView.jsx'
+import TimelinePanel from './components/TimelinePanel.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import LocationCard from './components/LocationCard.jsx'
 import { LOCATIONS } from './data/locations.js'
 import { TYPES } from './data/regions.js'
 import { TypeIcon } from './map/markers.jsx'
+import { CHARACTERS } from './data/journeys.js'
 
 export default function App() {
   const [query, setQuery] = useState('')
@@ -12,6 +14,19 @@ export default function App() {
   const [regionFilter, setRegionFilter] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const mapRef = useRef(null)
+  // Режим «Путь героев»: off | warn (предупреждение о спойлерах) | on
+  const [journeyMode, setJourneyMode] = useState('off')
+  const [epIdx, setEpIdx] = useState(1)
+  const [activeChars, setActiveChars] = useState(
+    () => new Set(CHARACTERS.slice(0, 4).map((c) => c.id)),
+  )
+
+  const toggleChar = (id) =>
+    setActiveChars((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -82,6 +97,7 @@ export default function App() {
         <MapView
           ref={mapRef}
           filtered={Boolean(query.trim()) || typeFilter.size > 0 || Boolean(regionFilter)}
+          journeys={journeyMode === 'on' ? { epIdx, activeIds: activeChars } : null}
           visibleIds={visibleIds}
           regionFilter={regionFilter}
           selectedId={selectedId}
@@ -95,12 +111,50 @@ export default function App() {
           onBackgroundTap={() => setRegionFilter(null)}
         />
 
+        <button
+          className={`journey-toggle ${journeyMode === 'on' ? 'on' : ''}`}
+          onClick={() =>
+            setJourneyMode((m) => (m === 'on' ? 'off' : m === 'off' ? 'warn' : 'off'))
+          }
+        >
+          🐺 Путь героев
+        </button>
+
+        {journeyMode === 'warn' && (
+          <div className="journey-warn">
+            <b>Осторожно, спойлеры!</b>
+            <p>
+              Маршруты героев раскрывают события всех сезонов сериала. Двигайте
+              таймлайн только до серии, которую вы досмотрели.
+            </p>
+            <div className="jw-buttons">
+              <button className="jw-ok" onClick={() => setJourneyMode('on')}>
+                Показать
+              </button>
+              <button className="jw-no" onClick={() => setJourneyMode('off')}>
+                Отмена
+              </button>
+            </div>
+          </div>
+        )}
+
+        {journeyMode === 'on' && (
+          <TimelinePanel
+            epIdx={epIdx}
+            setEpIdx={setEpIdx}
+            activeIds={activeChars}
+            toggleChar={toggleChar}
+            onClose={() => setJourneyMode('off')}
+          />
+        )}
+
         <div className="zoom-controls">
           <button onClick={() => mapRef.current?.zoomBy(1.5)} aria-label="Приблизить">＋</button>
           <button onClick={() => mapRef.current?.zoomBy(1 / 1.5)} aria-label="Отдалить">－</button>
           <button onClick={() => mapRef.current?.reset()} aria-label="Вся карта">⌂</button>
         </div>
 
+        {journeyMode !== 'on' && (
         <div className="legend">
           {Object.entries(TYPES).map(([key, t]) => (
             <span key={key} className="legend-item">
@@ -108,6 +162,7 @@ export default function App() {
             </span>
           ))}
         </div>
+        )}
 
         {selected && (
           <LocationCard loc={selected} onClose={() => setSelectedId(null)} />

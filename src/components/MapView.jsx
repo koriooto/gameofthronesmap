@@ -27,6 +27,7 @@ import {
 } from '../map/shapes.js'
 import { MarkerGlyph } from '../map/markers.jsx'
 import { LABEL_NUDGES } from '../data/labelNudges.js'
+import JourneyLayer from './JourneyLayer.jsx'
 import terrainUrl from '../assets/terrain.webp'
 
 const VB_W = 2000
@@ -100,7 +101,16 @@ function Peak({ x, y, s }) {
 const treePattern = (cy) => (cy < 700 ? 'pat-conif' : cy > 1150 ? 'pat-trop' : 'pat-decid')
 
 const MapView = forwardRef(function MapView(
-  { visibleIds, regionFilter, selectedId, onSelect, onRegionClick, onBackgroundTap, filtered },
+  {
+    visibleIds,
+    regionFilter,
+    selectedId,
+    onSelect,
+    onRegionClick,
+    onBackgroundTap,
+    filtered,
+    journeys,
+  },
   ref,
 ) {
   const svgRef = useRef(null)
@@ -644,6 +654,11 @@ const MapView = forwardRef(function MapView(
               )
             })}
           </g>
+
+          {/* ── маршруты героев (режим «Путь героев») ── */}
+          {journeys && (
+            <JourneyLayer epIdx={journeys.epIdx} activeIds={journeys.activeIds} />
+          )}
         </g>
       </g>
 
